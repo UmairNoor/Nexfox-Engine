@@ -1,0 +1,577 @@
+<title>AurumScalp Prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap">
+<style>
+/* Layout: trading-terminal shell — fixed left rail, dense card grid, gold as the only brand accent on a blue-black ground */
+:root{
+  --bg:#090D14; --rail:#0C111A; --surface:#111722; --surface2:#172030; --line:#222C3B; --line2:#1A2230;
+  --text:#E7EBF1; --muted:#8B96A9; --faint:#5E687A;
+  --gold:#E7B54A; --gold-ink:#1B1304; --gold-soft:rgba(231,181,74,.13);
+  --good:#22C55E; --good-soft:rgba(34,197,94,.13); --bad:#EF4444; --bad-soft:rgba(239,68,68,.12); --warn:#F59E0B; --warn-soft:rgba(245,158,11,.13); --info:#60A5FA; --info-soft:rgba(96,165,250,.13);
+  --f-body:"Manrope",system-ui,-apple-system,"Segoe UI",sans-serif; --f-mono:"JetBrains Mono",ui-monospace,Menlo,Consolas,monospace;
+  --r:10px; color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--text);font-family:var(--f-body);font-size:13px;line-height:1.45;-webkit-font-smoothing:antialiased}
+a{color:inherit;text-decoration:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit;color:var(--text)}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.mono{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+.up{color:var(--good)} .dn{color:var(--bad)} .mu{color:var(--muted)} .gd{color:var(--gold)}
+h1,h2,h3{text-wrap:balance;margin:0}
+
+/* prototype bar */
+#protobar{position:sticky;top:env(safe-area-inset-top,0px);z-index:50;display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:8px 16px;background:#05080D;border-bottom:1px solid var(--line);font-size:12px}
+#protobar b{color:var(--gold);letter-spacing:.06em;text-transform:uppercase;font-size:10.5px}
+#protobar .chips{display:flex;gap:4px;flex-wrap:wrap;min-width:0}
+#protobar .chips a{padding:3px 8px;border-radius:999px;color:var(--muted);border:1px solid transparent}
+#protobar .chips a.on{color:var(--text);border-color:var(--line);background:var(--surface)}
+#protobar .grp{color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;margin-left:6px}
+#protobar .note{margin-left:auto;color:var(--faint)}
+
+/* primitives */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border-radius:8px;border:1px solid transparent;padding:9px 14px;font-weight:700;font-size:12.5px;background:none;white-space:nowrap}
+.btn.p{background:var(--gold);color:var(--gold-ink)} .btn.p:hover{filter:brightness(1.07)}
+.btn.g{border-color:var(--line);color:var(--text)} .btn.g:hover{background:var(--surface2)}
+.btn.dg{border-color:rgba(239,68,68,.4);color:#FCA5A5;background:var(--bad-soft)}
+.btn.d{background:var(--bad);color:#fff}
+.btn.w{width:100%} .btn.sm{padding:6px 10px;font-size:11.5px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:14px;min-width:0}
+.card>h4{margin:0 0 10px;font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.card>h4 .r{margin-left:auto;font-weight:500;color:var(--muted);font-size:11px}
+.pill{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:700;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.pill.dot::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
+.pill.ok{color:var(--good);background:var(--good-soft)} .pill.bad{color:var(--bad);background:var(--bad-soft)} .pill.warn{color:var(--warn);background:var(--warn-soft)} .pill.info{color:var(--info);background:var(--info-soft)} .pill.gold{color:var(--gold);background:var(--gold-soft)}
+.field{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.field label{font-size:11.5px;color:var(--muted);font-weight:600;display:flex;justify-content:space-between}
+.inp{width:100%;background:#0B1119;border:1px solid var(--line);border-radius:8px;padding:10px 11px;font-size:13px}
+.inp:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.tabs{display:inline-flex;gap:2px;background:#0B1119;border:1px solid var(--line);border-radius:8px;padding:2px}
+.tabs button{border:0;background:none;padding:5px 10px;border-radius:6px;color:var(--muted);font-size:11.5px;font-weight:600}
+.tabs button.on{background:#243044;color:var(--text)}
+.tog{width:32px;height:18px;border-radius:999px;background:#2A3446;position:relative;border:0;padding:0;flex:none}
+.tog::after{content:"";position:absolute;top:3px;left:3px;width:12px;height:12px;border-radius:50%;background:#fff;transition:left .15s}
+.tog.on{background:var(--gold)} .tog.on::after{left:17px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px dashed var(--line2);font-size:12px}
+.kv:last-child{border-bottom:0} .kv>span:first-child{color:var(--muted)}
+.tw{overflow-x:auto}
+table.t{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums}
+table.t th{text-align:left;color:var(--muted);font-weight:600;font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap}
+table.t td{padding:8px 9px;border-bottom:1px solid var(--line2);white-space:nowrap}
+table.t .n{text-align:right}
+table.t tr.click:hover td{background:var(--surface2);cursor:pointer}
+.side-b{font-weight:800;font-size:10.5px;padding:2px 7px;border-radius:5px}
+.side-b.buy{color:var(--good);background:var(--good-soft)} .side-b.sell{color:var(--bad);background:var(--bad-soft)}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.kpi .l{font-size:11px;color:var(--muted);font-weight:600}
+.kpi .v{font-size:22px;font-weight:700;letter-spacing:-.02em;margin-top:4px;font-variant-numeric:tabular-nums}
+.kpi .d{font-size:11px;margin-top:2px;color:var(--muted)}
+.grid{display:grid;gap:12px}
+.banner{display:flex;align-items:center;gap:10px;border-radius:9px;padding:10px 12px;font-size:12.5px;flex-wrap:wrap}
+.banner.warn{background:var(--warn-soft);border:1px solid rgba(245,158,11,.35);color:#FCD34D}
+.banner.bad{background:var(--bad-soft);border:1px solid rgba(239,68,68,.35);color:#FCA5A5}
+.banner.info{background:var(--info-soft);border:1px solid rgba(96,165,250,.35);color:#BFDBFE}
+.banner .act{margin-left:auto;font-weight:700;background:none;border:0;color:inherit;text-decoration:underline}
+.logo{display:flex;align-items:center;gap:9px;font-weight:800;font-size:15px;letter-spacing:-.01em}
+.mark{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,#F6D98A,#C28A22);display:grid;place-items:center;color:var(--gold-ink);font-weight:800;font-size:14px}
+.range{width:100%;accent-color:var(--gold)}
+
+/* app shell */
+.shell{display:grid;grid-template-columns:212px 1fr;min-height:calc(100vh - 42px)}
+.rail{background:var(--rail);border-right:1px solid var(--line);padding:16px 12px;display:flex;flex-direction:column;gap:4px;position:sticky;top:42px;height:calc(100vh - 42px)}
+.rail .logo{margin:2px 6px 16px}
+.rail a.nav{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:8px;color:var(--muted);font-weight:600}
+.rail a.nav:hover{color:var(--text);background:var(--surface)}
+.rail a.nav.on{background:var(--surface2);color:var(--text)}
+.rail a.nav svg{width:16px;height:16px;flex:none}
+.rail a.nav.on svg{color:var(--gold)}
+.rail .plan{margin-top:auto;border:1px solid var(--line);border-radius:9px;padding:10px;font-size:11.5px;color:var(--muted)}
+.main{min-width:0;display:flex;flex-direction:column}
+.top{display:flex;align-items:center;gap:10px;padding:10px 20px;border-bottom:1px solid var(--line);flex-wrap:wrap;min-height:56px}
+.top h1{font-size:17px;font-weight:700;margin-right:auto}
+.sel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:6px 10px;font-size:12px}
+.avatar{width:30px;height:30px;border-radius:50%;background:#2B3547;display:grid;place-items:center;font-size:11px;font-weight:700;border:0}
+.content{padding:18px 20px 28px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.bnav{display:none}
+
+/* dashboard layout */
+.dash-mid{display:grid;grid-template-columns:minmax(0,1fr) 290px;gap:12px}
+.dash-bot{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(0,1fr);gap:12px}
+#chart{width:100%;height:280px;display:block}
+.feed{display:flex;flex-direction:column;max-height:250px;overflow:auto}
+.feed div{display:flex;gap:9px;align-items:baseline;padding:7px 0;border-bottom:1px solid var(--line2);font-size:12px}
+.feed .ts{font-family:var(--f-mono);font-size:10.5px;color:var(--faint);flex:none}
+.feed .dt{width:7px;height:7px;border-radius:50%;flex:none;transform:translateY(-1px)}
+.stale{opacity:.5}
+
+/* public pages */
+.pub{max-width:1160px;margin:0 auto;padding-inline:20px;padding-block:0 40px}
+.pnav{display:flex;align-items:center;gap:22px;padding-block:18px;flex-wrap:wrap}
+.pnav a.l{color:var(--muted);font-weight:600}
+.pnav .sp{margin-left:auto}
+.hero{display:grid;grid-template-columns:1fr 1.05fr;gap:36px;align-items:center;padding-block:30px 26px}
+.hero h1{font-size:clamp(30px,4.2vw,46px);line-height:1.08;letter-spacing:-.03em;font-weight:800}
+.hero p{color:var(--muted);font-size:15px;max-width:48ch;margin:14px 0 0}
+.fine{font-size:11.5px;color:var(--faint);margin-top:14px;max-width:60ch}
+.steps3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.plans{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.plan-c{display:flex;flex-direction:column;gap:10px;padding:20px}
+.plan-c.pop{border-color:var(--gold);box-shadow:0 0 0 1px var(--gold)}
+.plan-c .price{font-size:34px;font-weight:800;letter-spacing:-.03em}
+.plan-c ul{list-style:none;padding:0;margin:4px 0 8px;display:flex;flex-direction:column;gap:7px;flex:1}
+.plan-c li::before{content:"✓";color:var(--gold);margin-right:8px;font-weight:800}
+.foot{border-top:1px solid var(--line);margin-top:34px;padding-top:18px;color:var(--faint);font-size:11.5px;display:flex;gap:16px;flex-wrap:wrap;justify-content:space-between}
+
+/* auth */
+.auth{display:grid;grid-template-columns:1fr 1fr;min-height:calc(100vh - 42px)}
+.auth .brand{background:radial-gradient(circle at 25% 15%,#2B2210,var(--bg) 62%);border-right:1px solid var(--line);padding:36px;display:flex;flex-direction:column}
+.auth .brand h2{font-size:24px;letter-spacing:-.02em;margin-top:16px}
+.auth .form{display:flex;align-items:center;justify-content:center;padding:28px 20px}
+.auth .box{width:100%;max-width:360px}
+.auth .box h3{font-size:22px;letter-spacing:-.02em}
+.otp{display:flex;gap:8px;margin:6px 0 16px}
+.otp input{width:44px;height:50px;text-align:center;font-family:var(--f-mono);font-size:20px;background:#0B1119;border:1px solid var(--line);border-radius:9px}
+.otp input:focus{outline:none;border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-soft)}
+.or{display:flex;align-items:center;gap:10px;color:var(--faint);font-size:11.5px;margin:14px 0}
+.or::before,.or::after{content:"";flex:1;height:1px;background:var(--line)}
+.err{color:#FCA5A5;font-size:12px;margin:-4px 0 10px}
+
+/* onboarding */
+.ob{max-width:1040px;margin:0 auto;padding-inline:20px;padding-block:22px 40px}
+.stepper{display:flex;align-items:center;gap:8px;margin:18px 0 20px;flex-wrap:wrap}
+.stepper button{display:flex;align-items:center;gap:8px;background:none;border:0;padding:0;color:var(--muted);font-weight:600}
+.stepper .c{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:800;border:1px solid #2E3A4E}
+.stepper button.done .c{background:var(--gold);color:var(--gold-ink);border-color:var(--gold)}
+.stepper button.cur{color:var(--text)} .stepper button.cur .c{border:2px solid var(--gold);color:var(--gold)}
+.stepper .ln{flex:1;min-width:16px;height:1px;background:#2E3A4E}
+.choice{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px}
+.choice button{text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:9px;padding:11px}
+.choice button.on{border-color:var(--gold);background:var(--gold-soft)}
+.choice button b{display:block;font-size:13px} .choice button span{font-size:11.5px;color:var(--muted)}
+.spin{width:18px;height:18px;border-radius:50%;border:2px solid var(--warn);border-top-color:transparent;animation:sp 1s linear infinite;flex:none}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+/* modal + toast */
+#modal{position:fixed;inset:0;background:rgba(3,6,10,.7);z-index:80;display:grid;place-items:center;padding:16px}
+[hidden]{display:none!important}
+#modal .mbox{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:20px;width:100%;max-width:420px}
+#modal h3{font-size:17px;margin-bottom:6px}
+#toasts{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:90;display:flex;flex-direction:column;gap:8px;max-width:calc(100vw - 32px)}
+.toast{display:flex;gap:10px;align-items:flex-start;background:#1A2230;border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:250px;box-shadow:0 8px 24px rgba(0,0,0,.4);animation:tin .2s ease-out}
+.toast .dt{width:8px;height:8px;border-radius:50%;margin-top:5px;flex:none}
+@keyframes tin{from{transform:translateY(8px);opacity:.3}}
+.heat{border-collapse:separate;border-spacing:3px;width:100%;font-size:11px;font-variant-numeric:tabular-nums}
+.heat td{text-align:center;padding:6px 0;border-radius:4px}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:min(420px,100vw);background:var(--surface);border-left:1px solid var(--line);z-index:85;padding:18px;overflow:auto}
+
+@media (max-width:980px){
+  .dash-mid,.dash-bot{grid-template-columns:1fr}
+  .hero,.auth{grid-template-columns:1fr}
+  .auth .brand{display:none}
+  .plans,.steps3{grid-template-columns:1fr}
+}
+@media (max-width:760px){
+  .shell{grid-template-columns:1fr}
+  .rail{display:none}
+  .content{padding:14px 16px 90px}
+  .top{padding:10px 16px}
+  .top .hide-s{display:none}
+  .bnav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:40;background:var(--rail);border-top:1px solid var(--line);padding:8px 8px calc(8px + env(safe-area-inset-bottom,0px));justify-content:space-around}
+  .bnav a{display:flex;flex-direction:column;align-items:center;gap:3px;font-size:10.5px;color:var(--muted);font-weight:600;min-width:52px}
+  .bnav a.on{color:var(--gold)} .bnav svg{width:18px;height:18px}
+  #protobar .chips{display:none}
+  #protobar select{display:inline-block!important}
+  #chart{height:220px}
+}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+
+<div id="protobar">
+  <b>Prototype</b>
+  <select id="jump" class="sel" style="display:none" aria-label="Jump to screen"></select>
+  <div class="chips" id="chips"></div>
+  <span class="note">Sample data · live-simulated prices</span>
+</div>
+<div id="root"></div>
+<div id="modal" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+
+<script>
+(function(){
+"use strict";
+const $ = s => document.querySelector(s);
+const fmt = (v, d=2) => Number(v).toLocaleString("en-US",{minimumFractionDigits:d,maximumFractionDigits:d});
+const sgn = (v, d=2) => (v>=0?"+":"") + fmt(v,d);
+let seed = 42; const rnd = () => (seed = (seed*16807) % 2147483647) / 2147483647;
+const gauss = () => { let u=0,v=0; while(!u)u=rnd(); while(!v)v=rnd(); return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); };
+const pad = n => String(n).padStart(2,"0");
+const clock = d => pad(d.getUTCHours())+":"+pad(d.getUTCMinutes())+":"+pad(d.getUTCSeconds());
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+/* ---------------- state ---------------- */
+const S = {
+  authed:false, plan:"Pro", yearly:false, running:true, killed:false,
+  price:3412.40, candles:[], positions:[], trades:[], activity:[],
+  balance:12294.0, todayPnl:0, todayTrades:0, todayWins:0, spread:18, ping:4,
+  preset:"Balanced", applied:true,
+  risk:{risk:1.0, daily:3.0, spread:25, maxTrades:40, dd:8.0, maxLot:1.0, news:true, be:true, trail:true, asia:false},
+  alerts:{}, ob:{step:3, mode:"self", bound:false, connected:false, preset:"Balanced"},
+  tradeFilter:"all", tradeSearch:"", settingsTab:"Security", perfRange:"3M",
+  accounts:[{login:"5102948", server:"ICMarkets-Live", type:"Live", status:"Running", ea:"v2.4.1"},{login:"7730215", server:"Pepperstone-Demo", type:"Demo", status:"Paper", ea:"v2.4.1"}],
+  selAcct:"5102948", lastTick:Date.now()
+};
+// seed candle history
+(function(){ let p = S.price - 6; for(let i=0;i<70;i++){ const o=p, c=o+gauss()*1.4+0.08; const h=Math.max(o,c)+Math.abs(gauss())*0.8, l=Math.min(o,c)-Math.abs(gauss())*0.8; S.candles.push({o,h,l,c}); p=c; } S.price = p; })();
+// seed trade history
+(function(){ const mods=["Momentum","Breakout","VWAP rev."]; let t = Date.now() - 3600e3*2; for(let i=0;i<46;i++){ const side = rnd()>.5?"BUY":"SELL", lots=[0.1,0.12,0.16,0.2][Math.floor(rnd()*4)], pts = gauss()*1.5+0.55, ent = 3400+rnd()*20; const pnl = pts*lots*100; t -= (60+rnd()*400)*1000; S.trades.push({t:new Date(t), side, lots, entry:ent, exit: side==="BUY"?ent+pts:ent-pts, pts, pnl, slip:Math.abs(gauss()*.3+.25), spread:14+Math.floor(rnd()*10), held:Math.floor(20+rnd()*200), module:mods[Math.floor(rnd()*3)], reason: pnl>30?"TP":pnl<-18?"SL":pnl>=0?"Trail":"Time stop"}); }
+  const today = S.trades.slice(0,12); S.todayPnl = today.reduce((a,b)=>a+b.pnl,0); S.todayTrades = today.length; S.todayWins = today.filter(x=>x.pnl>0).length; })();
+S.positions.push({id:1, side:"BUY", lots:0.16, entry:S.price-2.1, sl:1.6, tp:3.2, module:"Momentum", opened:Date.now()-50e3});
+[["ok","TP hit +52.10 · held 1m 48s"],["warn","Entry skipped: spread 34 > 25"],["info","Preset Balanced v3 applied"],["bad","SL hit −26.40"]].forEach((a,i)=>S.activity.push({t:new Date(Date.now()-(i+1)*420e3), k:a[0], m:a[1]}));
+
+/* ---------------- icons ---------------- */
+const IC = {
+  dash:'<path d="M3 13h8V3H3zM13 21h8V11h-8zM3 21h8v-6H3zM13 3v6h8V3z" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  acct:'<rect x="3" y="4" width="18" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M8 21h8M12 18v3" stroke="currentColor" stroke-width="1.8"/>',
+  perf:'<path d="M3 20h18M6 16l4-5 3 3 5-7" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  trades:'<path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8"/>',
+  bell:'<path d="M6 16V11a6 6 0 1 1 12 0v5l2 2H4zM10 21h4" fill="none" stroke="currentColor" stroke-width="1.8"/>',
+  card:'<rect x="2" y="5" width="20" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M2 10h20" stroke="currentColor" stroke-width="1.8"/>',
+  gear:'<circle cx="12" cy="12" r="3.2" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1" stroke="currentColor" stroke-width="1.8"/>',
+  shield:'<path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z" fill="none" stroke="currentColor" stroke-width="1.8"/>'
+};
+const ico = k => `<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
+
+/* ---------------- routing ---------------- */
+const SCREENS = [
+  ["Public", [["landing","Landing"],["pricing","Pricing"]]],
+  ["Auth", [["login","Login"],["twofa","2FA"],["signup","Sign up"],["verify","Verify email"],["checkout","Checkout"]]],
+  ["Setup", [["onboarding","Onboarding"]]],
+  ["App", [["dashboard","Dashboard"],["accounts","Accounts & EA"],["performance","Performance"],["trades","Trades"],["alerts","Alerts"],["billing","Billing"],["settings","Settings"]]],
+  ["Admin", [["admin","Admin console"]]]
+];
+const ALL = SCREENS.flatMap(g=>g[1].map(x=>x[0]));
+function buildBar(){
+  $("#chips").innerHTML = SCREENS.map(g=>`<span class="grp">${g[0]}</span>`+g[1].map(([k,l])=>`<a href="#${k}" data-k="${k}">${esc(l)}</a>`).join("")).join("");
+  $("#jump").innerHTML = SCREENS.map(g=>`<optgroup label="${g[0]}">`+g[1].map(([k,l])=>`<option value="${k}">${esc(l)}</option>`).join("")+`</optgroup>`).join("");
+  $("#jump").onchange = e => { location.hash = e.target.value; };
+}
+function current(){ const h = location.hash.replace("#",""); return ALL.includes(h) ? h : "landing"; }
+function go(k){ if(location.hash === "#"+k) render(); else location.hash = k; }
+window.addEventListener("hashchange", render);
+
+/* ---------------- shell ---------------- */
+const NAV = [["dashboard","Dashboard","dash"],["accounts","Accounts & EA","acct"],["performance","Performance","perf"],["trades","Trades","trades"],["alerts","Alerts","bell"],["billing","Billing","card"],["settings","Settings","gear"]];
+function eaPill(){
+  if(S.killed) return '<span class="pill bad dot" id="eapill">Stopped</span>';
+  if(!S.running) return '<span class="pill warn dot" id="eapill">Paused</span>';
+  if(S.spread > S.risk.spread) return '<span class="pill warn dot" id="eapill">High spread</span>';
+  return `<span class="pill ok dot" id="eapill">EA online · ${S.ping} ms</span>`;
+}
+function shell(k, title, body, extraTop=""){
+  const cur = k;
+  return `<div class="shell"><aside class="rail"><div class="logo"><div class="mark">A</div>AurumScalp</div>
+  ${NAV.map(([key,l,ic])=>`<a class="nav ${key===cur?"on":""}" href="#${key}">${ico(ic)}${esc(l)}</a>`).join("")}
+  <div class="plan"><b style="color:var(--text)">${S.plan} plan</b><br>${S.accounts.length} of ${S.plan==="Starter"?1:3} accounts used<br><a class="gd" href="#billing">${S.plan==="Elite"?"Manage plan":"Upgrade to Elite →"}</a></div></aside>
+  <div class="main"><div class="top"><h1>${title}</h1>${extraTop}
+  <select class="sel hide-s" id="acctSel" aria-label="Account">${S.accounts.map(a=>`<option ${a.login===S.selAcct?"selected":""} value="${a.login}">MT5 · ${a.login} · ${a.server}</option>`).join("")}</select>
+  ${eaPill()}<span class="pill gold hide-s">${session()}</span>
+  <button class="avatar" id="avatarBtn" title="Account menu">UN</button></div>
+  <div class="content">${body}</div></div></div>
+  <nav class="bnav">${NAV.slice(0,5).map(([key,l,ic])=>`<a class="${key===cur?"on":""}" href="#${key}">${ico(ic)}${esc(l.split(" ")[0])}</a>`).join("")}</nav>`;
+}
+function session(){ const h = new Date().getUTCHours(); if(h>=7&&h<12) return "London session"; if(h>=12&&h<16) return "London–NY overlap"; if(h>=16&&h<21) return "New York session"; return "Asian session"; }
+
+/* ---------------- public ---------------- */
+function pubNav(){ return `<div class="pnav"><a href="#landing" class="logo"><div class="mark">A</div>AurumScalp</a><a class="l" href="#landing">Product</a><a class="l" href="#performance">Results</a><a class="l" href="#pricing">Pricing</a><a class="l" href="#onboarding">Setup guide</a><span class="sp"></span><a class="l" href="#login">Log in</a><a class="btn p" href="#signup">Start 7-day trial</a></div>`; }
+function footer(){ return `<div class="foot"><span>© 2026 AurumScalp (placeholder brand)</span><span>Trading gold CFDs carries a high risk of losing money. Past results do not guarantee future results. We sell software, not investment advice.</span></div>`; }
+const V = {};
+V.landing = () => `<div class="pub">${pubNav()}
+<section class="hero"><div><span class="pill gold">XAUUSD scalping · MetaTrader 5</span>
+<h1 style="margin-top:14px">Precision gold scalping, running on your own MT5.</h1>
+<p>Tick-level entries filtered by spread, session and news. Your broker, your account, your risk limits, all controlled from one dashboard.</p>
+<div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap"><a class="btn p" href="#signup">Start free trial</a><a class="btn g" href="#performance">See tracked results</a></div>
+<p class="fine">The trial runs on demo accounts only. Figures on this page are sample data for the prototype.</p></div>
+<div class="card"><h4>XAUUSD · M1 <span class="r"><span class="pill ok dot">Live demo account</span></span></h4><canvas id="chart" style="height:260px"></canvas></div></section>
+<div class="kpis">${[["Tracked live accounts","212","sample data"],["Average slippage","0.4 pts","from execution logs"],["Profit factor · 12 mo","1.48","all presets, after costs"],["Max drawdown · 12 mo","9.6%","Balanced preset"]].map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("")}</div>
+<h2 style="font-size:20px;margin:30px 0 12px">Live in three steps</h2>
+<div class="steps3">${[["Subscribe","Pick a plan and start a 7-day trial on a demo account."],["Install the EA","Drop AurumScalp onto an XAUUSD chart and paste your license key."],["Choose a preset","Conservative to Prop-Firm. Change risk limits any time."]].map((s,i)=>`<div class="card"><div class="gd mono" style="font-weight:600">Step ${i+1}</div><div style="font-weight:700;font-size:15px;margin:4px 0">${s[0]}</div><div class="mu">${s[1]}</div></div>`).join("")}</div>
+${footer()}</div>`;
+
+function planCards(){
+  const P=[["Starter",49,"1 MT5 account",["Core scalper modules","Default presets","Dashboard + Telegram alerts","Email support"]],["Pro",99,"3 MT5 accounts",["All presets + custom risk","News filter, prop-firm mode","Advanced analytics","Priority email support"]],["Elite · hosted",199,"3 hosted accounts",["Everything in Pro","We run MT5 for you 24/5","Low-latency London / NY","Priority chat support"]]];
+  return P.map(([n,p,a,f])=>{ const pop=n==="Pro"; const price = S.yearly ? Math.round(p*10/12) : p;
+    return `<div class="card plan-c ${pop?"pop":""}"><div style="display:flex;justify-content:space-between;align-items:center"><b style="font-size:15px">${n}</b>${pop?'<span class="pill gold">Most popular</span>':""}</div>
+    <div><span class="price">$${price}</span><span class="mu"> / month${S.yearly?", billed yearly":""}</span></div><div class="mu">${a}</div>
+    <ul>${f.map(x=>`<li>${x}</li>`).join("")}</ul><a class="btn ${pop?"p":"g"} w" href="#signup" data-plan="${n.split(" ")[0]}">${n.startsWith("Elite")?"Get hosted":"Start 7-day trial"}</a></div>`; }).join("");
+}
+V.pricing = () => `<div class="pub">${pubNav()}
+<div style="text-align:center;padding:18px 0 22px"><h1 style="font-size:32px;letter-spacing:-.03em">Simple monthly plans</h1><p class="mu" style="margin:8px 0 14px">Cancel any time. The license follows your subscription automatically.</p>
+<div class="tabs" id="billTabs"><button class="${S.yearly?"":"on"}" data-y="0">Monthly</button><button class="${S.yearly?"on":""}" data-y="1">Yearly · 2 months free</button></div></div>
+<div class="plans" id="planCards">${planCards()}</div>
+<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr);margin-top:14px">
+<div class="card"><h4>Compare plans</h4><div class="tw"><table class="t"><tr><th>Feature</th><th>Starter</th><th>Pro</th><th>Elite</th></tr>
+${[["MT5 accounts","1","3","3 hosted"],["Presets","3","All + custom","All + custom"],["News blackout filter","—","✓","✓"],["Prop-firm mode","—","✓","✓"],["Who runs MT5","You","You","We do, 24/5"]].map(r=>`<tr>${r.map(c=>`<td>${c}</td>`).join("")}</tr>`).join("")}</table></div></div>
+<div class="card"><h4>Questions</h4>${[["Which brokers work?","Any MT5 broker that allows EAs and scalping. We keep a tested-broker list with typical XAUUSD spreads."],["Do you hold my money?","No. Funds stay with your broker. Self-hosted plans never ask for your MT5 password."],["What if a payment fails?","You get 72 hours of grace. After that the EA stops opening trades and only manages open ones."],["Can I cancel any time?","Yes, from Billing. Access runs to the end of the paid period."]].map(q=>`<details style="border-bottom:1px dashed var(--line2);padding:8px 0"><summary style="cursor:pointer;font-weight:600">${q[0]}</summary><p class="mu" style="margin:6px 0 2px">${q[1]}</p></details>`).join("")}</div></div>
+${footer()}</div>`;
+
+/* ---------------- auth ---------------- */
+function authWrap(inner){ return `<div class="auth"><div class="brand"><div class="logo"><div class="mark">A</div>AurumScalp</div><div style="margin-top:auto">${equitySvg(460,170,21,false)}<h2>Your gold scalper, always in view.</h2><p class="mu" style="max-width:40ch">Live EA status, trades and risk controls for every MT5 account you connect.</p></div></div><div class="form"><div class="box">${inner}</div></div></div>`; }
+V.login = () => authWrap(`<h3>Welcome back</h3><p class="mu" style="margin:4px 0 20px">Log in to your AurumScalp dashboard.</p>
+<form id="loginForm"><div class="field"><label for="le">Email</label><input class="inp" id="le" type="email" value="umair@example.com" autocomplete="email"></div>
+<div class="field"><label for="lp">Password <a class="gd" href="#login" id="forgot">Forgot?</a></label><input class="inp" id="lp" type="password" placeholder="Try any 6+ characters" autocomplete="current-password"></div>
+<div id="lerr"></div>
+<label style="display:flex;gap:9px;align-items:center;margin:4px 0 16px;color:var(--muted);font-size:12px"><button type="button" class="tog on" id="remember" aria-label="Keep me signed in"></button>Keep me signed in for 30 days</label>
+<button class="btn p w" type="submit">Log in</button></form>
+<div class="or">or</div><button class="btn g w" id="gLogin">Continue with Google</button>
+<p class="mu" style="text-align:center;margin-top:16px">New here? <a class="gd" href="#signup">Start a 7-day trial</a></p>`);
+V.twofa = () => authWrap(`<div class="mu" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Step 2 of 2</div><h3 style="margin-top:6px">Two-factor code</h3>
+<p class="mu" style="margin:6px 0 14px">Enter the 6-digit code from your authenticator app. Any 6 digits work in this prototype.</p>
+<form id="otpForm"><div class="otp">${[0,1,2,3,4,5].map(i=>`<input inputmode="numeric" maxlength="1" id="otp${i}" aria-label="Digit ${i+1}">`).join("")}</div><div id="oerr"></div>
+<button class="btn p w" type="submit">Verify and continue</button></form><p class="mu" style="text-align:center;margin-top:14px"><a class="gd" href="#twofa">Use a backup code</a> · <a href="#login">Back</a></p>`);
+V.signup = () => authWrap(`<div class="mu" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Create account · ${S.plan} plan</div><h3 style="margin-top:6px">Start your 7-day trial</h3><p class="mu" style="margin:4px 0 18px">Demo accounts only during the trial.</p>
+<form id="suForm"><div class="field"><label for="sn">Full name</label><input class="inp" id="sn" value="Umair Noor"></div>
+<div class="field"><label for="se">Email</label><input class="inp" id="se" type="email" value="umair@example.com"></div>
+<div class="field"><label for="sp">Password</label><input class="inp" id="sp" type="password" placeholder="At least 12 characters"><div id="pwm" style="display:flex;gap:4px">${[0,1,2,3].map(()=>'<span style="flex:1;height:4px;border-radius:4px;background:#2A3446"></span>').join("")}</div><span id="pwl" class="mu" style="font-size:11px">Use 12+ characters with a number and a symbol</span></div>
+<div class="field"><label for="sc">Country</label><select class="inp" id="sc"><option>Pakistan</option><option>United Arab Emirates</option><option>United Kingdom</option><option>United States</option><option>Saudi Arabia</option></select></div>
+<label style="display:flex;gap:10px;align-items:flex-start;color:var(--muted);font-size:12px;margin:2px 0 14px"><button type="button" class="tog" id="consent" aria-label="Agree to terms"></button><span>I agree to the Terms and the Risk Disclosure, and I understand trading can lose money.</span></label>
+<div id="serr"></div><button class="btn p w" type="submit">Create account</button></form>
+<p class="mu" style="text-align:center;margin-top:14px">Already have an account? <a class="gd" href="#login">Log in</a></p>`);
+V.verify = () => authWrap(`<div style="width:48px;height:48px;border-radius:12px;background:var(--gold-soft);display:grid;place-items:center;margin-bottom:14px" class="gd">${ico("bell")}</div><h3>Check your email</h3><p class="mu" style="margin:6px 0 16px">We sent a 6-digit code to <b style="color:var(--text)">umair@example.com</b>.</p>
+<form id="verForm"><div class="otp">${[0,1,2,3,4,5].map(i=>`<input inputmode="numeric" maxlength="1" id="otp${i}" aria-label="Digit ${i+1}">`).join("")}</div><div id="oerr"></div><button class="btn p w" type="submit">Verify email</button></form>
+<p class="mu" style="text-align:center;margin-top:14px" id="resend">Resend code in 0:42</p>`);
+V.checkout = () => { const price = {Starter:49,Pro:99,Elite:199}[S.plan]; return authWrap(`<div class="mu" style="font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase">Checkout</div><h3 style="margin-top:6px">${S.plan} · ${S.yearly?"yearly":"monthly"}</h3>
+<div class="card" style="margin:14px 0"><div class="kv"><span>Plan</span><span>${S.plan}</span></div><div class="kv"><span>Trial</span><span>7 days, demo accounts only</span></div><div class="kv"><span>Then</span><span class="mono">$${S.yearly?price*10:price}.00 / ${S.yearly?"year":"month"}</span></div><div class="kv"><span>Due today</span><span class="mono gd">$0.00</span></div></div>
+<div class="field"><label>Card (hosted by the payment provider)</label><input class="inp mono" value="4242 4242 4242 4242   12/28   123" aria-label="Card"></div>
+<button class="btn p w" id="payBtn">Start trial — $0 today</button><p class="mu" style="font-size:11.5px;text-align:center;margin-top:10px">Cancel before day 7 and you pay nothing. Card details never touch our servers.</p>
+<p style="text-align:center;margin-top:10px"><a class="mu" href="#pricing">Change plan</a></p>`); };
+
+/* ---------------- onboarding ---------------- */
+V.onboarding = () => { const o=S.ob; const steps=["Plan","Download EA","Connect MT5","Pick preset","Go live"];
+ const stepper = `<div class="stepper">${steps.map((s,i)=>`<button data-step="${i+1}" class="${i+1<o.step?"done":i+1===o.step?"cur":""}"><span class="c">${i+1<o.step?"✓":i+1}</span>${s}</button>${i<4?'<span class="ln"></span>':""}`).join("")}</div>`;
+ let body="";
+ if(o.step===1) body = `<div class="card" style="max-width:560px"><h3 style="font-size:18px">Your plan</h3><p class="mu">You are on the <b style="color:var(--text)">${S.plan}</b> trial. It unlocks ${S.plan==="Starter"?"1 MT5 account":"3 MT5 accounts"}.</p><div class="choice" style="margin:14px 0">${["Starter","Pro","Elite"].map(p=>`<button data-plan="${p}" class="${S.plan===p?"on":""}"><b>${p}</b><span>$${{Starter:49,Pro:99,Elite:199}[p]} / month</span></button>`).join("")}</div><button class="btn p" data-next>Continue</button></div>`;
+ if(o.step===2) body = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))"><div class="card"><h3 style="font-size:18px">Download the EA</h3><p class="mu">One file works for every broker. Keep it in your MT5 data folder.</p><div class="kv"><span>File</span><span class="mono">AurumScalp.ex5 · v2.4.1</span></div><div class="kv"><span>Size</span><span>184 KB</span></div><button class="btn g" style="margin:12px 0" id="dlEa">Download AurumScalp.ex5</button>
+ <div class="field"><label>Your license key</label><div style="display:flex;gap:8px"><input class="inp mono" id="lic" value="AUSC-7F3K-92QD-X1LM" readonly><button class="btn g" id="copyLic">Copy</button></div></div><button class="btn p" data-next>I have the EA</button></div>
+ <div class="card"><h4>Allow the EA to reach our server</h4>${["MT5 → Tools → Options → Expert Advisors","Tick “Allow WebRequest for listed URL”","Add <span class='mono gd'>https://api.aurumscalp.com</span>","Click OK and restart MT5"].map((t,i)=>`<div class="kv"><span class="gd mono">${i+1}</span><span style="flex:1">${t}</span></div>`).join("")}</div></div>`;
+ if(o.step===3) body = `<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr))"><div class="card"><h3 style="font-size:18px">Connect your MT5 account</h3><p class="mu" style="margin:4px 0 14px">We only need the login number. Your password stays in MT5.</p>
+ <div class="field"><label>How will the EA run?</label><div class="choice"><button data-mode="self" class="${o.mode==="self"?"on":""}"><b>Self-hosted</b><span>On my PC or VPS</span></button><button data-mode="hosted" class="${o.mode==="hosted"?"on":""}"><b>Hosted · Elite</b><span>We run MT5 for you</span></button></div></div>
+ <div class="field"><label for="obSrv">Broker server</label><select class="inp" id="obSrv"><option>ICMarketsSC-Demo</option><option>Pepperstone-Demo</option><option>Exness-MT5Trial</option></select></div>
+ <div class="field"><label for="obLogin">MT5 login number</label><input class="inp mono" id="obLogin" value="5102948" inputmode="numeric"></div>
+ ${o.mode==="hosted"?'<div class="field"><label for="obPw">MT5 trading password</label><input class="inp" id="obPw" type="password" placeholder="Stored encrypted in our vault"></div>':""}
+ <div style="display:flex;gap:8px"><button class="btn g" data-back>Back</button><button class="btn p" style="flex:1" id="bindBtn" ${o.bound?"disabled":""}>${o.bound?"Account bound":"Bind account"}</button></div></div>
+ <div class="grid"><div class="card"><h4>Attach the EA in MT5</h4>${["Open an XAUUSD chart on the M1 timeframe","Drag AurumScalp from Navigator → Expert Advisors onto the chart","Paste your license key in the Inputs tab","Press Algo Trading so it turns green"].map((t,i)=>`<div class="kv"><span class="gd mono">${i+1}</span><span style="flex:1">${t}</span></div>`).join("")}</div>
+ <div class="card" id="hsCard" style="border-color:${o.connected?"rgba(34,197,94,.45)":"rgba(245,158,11,.4)"}">${o.connected?`<div style="display:flex;gap:10px;align-items:center"><span class="pill ok dot">Connected</span><b>EA handshake received</b></div><p class="mu" style="margin:8px 0 12px">Account ${esc($("#obLogin")?$("#obLogin").value:"5102948")} · spread 18 pts · ping 4 ms · EA v2.4.1</p><button class="btn p" data-next>Next: pick a preset</button>`:`<div style="display:flex;gap:10px;align-items:center">${o.bound?'<div class="spin"></div>':""}<div><b>${o.bound?"Waiting for the EA handshake…":"Bind your account first"}</b><div class="mu" style="font-size:12px">${o.bound?"Turns green within 10 s of the EA starting.":"Then start the EA in MT5."} <a class="gd" href="#onboarding" id="trouble">Troubleshoot</a></div></div></div>`}</div></div></div>`;
+ if(o.step===4) body = `<div class="card" style="max-width:720px"><h3 style="font-size:18px">Pick a preset</h3><p class="mu" style="margin:4px 0 14px">You can switch presets or fine-tune risk later in Accounts &amp; EA.</p><div class="choice">${presetList().map(p=>`<button data-preset="${p[0]}" class="${o.preset===p[0]?"on":""}"><b>${p[0]}</b><span>${p[1]}</span></button>`).join("")}</div><div style="display:flex;gap:8px;margin-top:16px"><button class="btn g" data-back>Back</button><button class="btn p" data-next>Continue</button></div></div>`;
+ if(o.step===5) body = `<div class="card" style="max-width:560px"><h3 style="font-size:18px">You're ready</h3><div style="margin:12px 0"><div class="kv"><span>Account</span><span class="mono">5102948 · demo</span></div><div class="kv"><span>Preset</span><span>${o.preset}</span></div><div class="kv"><span>Alerts</span><span>Telegram not connected · <a class="gd" href="#alerts">Connect</a></span></div><div class="kv"><span>Safety</span><span>Daily loss 3% · kill switch on dashboard</span></div></div><button class="btn p w" id="goLive">Open my dashboard</button></div>`;
+ return `<div class="ob"><div class="logo"><div class="mark">A</div>AurumScalp</div>${stepper}${body}</div>`; };
+function presetList(){ return [["Conservative","0.5% risk · 20 trades/day"],["Balanced","1.0% risk · 40 trades/day"],["Aggressive","1.5% risk · 60 trades/day"],["Prop-Firm","0.5% risk · 4% daily cap"]]; }
+
+/* ---------------- dashboard ---------------- */
+function equityNow(){ return S.balance + S.positions.reduce((a,p)=>a+pnlOf(p),0); }
+function pnlOf(p){ return (p.side==="BUY"?S.price-p.entry:p.entry-S.price)*p.lots*100; }
+function kpiHtml(){ const eq=equityNow(); const open=S.positions.reduce((a,p)=>a+pnlOf(p),0); const wr = S.todayTrades? S.todayWins/S.todayTrades*100 : 0;
+ return [["Equity",fmt(eq),`balance ${fmt(S.balance)}`,""],["Today P&L",sgn(S.todayPnl+open),`${S.todayTrades} trades · ${S.todayWins} won`,S.todayPnl+open>=0?"up":"dn"],["Win rate · today",fmt(wr,1)+"%","7-day 64.2%",""],["Profit factor · 30d","1.62","after costs",""],["Drawdown from peak",fmt(-Math.max(0,(12780-eq)/12780*100),1)+"%",`limit ${fmt(S.risk.dd,1)}%`,""]]
+  .map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v ${k[3]}">${k[1]}</div><div class="d">${k[2]}</div></div>`).join(""); }
+function posHtml(){ if(!S.positions.length) return `<p class="mu" style="padding:14px 0">No open positions. ${S.running&&!S.killed?"The EA is watching for the next setup.":"The EA is not trading."}</p>`;
+ return `<div class="tw"><table class="t"><tr><th>Side</th><th class="n">Lots</th><th class="n">Entry</th><th class="n">Price</th><th class="n">SL</th><th class="n">TP</th><th class="n">P&L</th><th>Module</th><th></th></tr>${S.positions.map(p=>{const v=pnlOf(p); const sl=p.side==="BUY"?p.entry-p.sl:p.entry+p.sl, tp=p.side==="BUY"?p.entry+p.tp:p.entry-p.tp; return `<tr><td><span class="side-b ${p.side.toLowerCase()}">${p.side}</span></td><td class="n">${fmt(p.lots)}</td><td class="n mono">${fmt(p.entry)}</td><td class="n mono">${fmt(S.price)}</td><td class="n mono dn">${fmt(sl)}</td><td class="n mono up">${fmt(tp)}</td><td class="n ${v>=0?"up":"dn"}">${sgn(v)}</td><td class="mu">${p.module}</td><td><button class="btn sm g" data-close="${p.id}">Close</button></td></tr>`}).join("")}</table></div>`; }
+function feedHtml(){ const col={ok:"var(--good)",bad:"var(--bad)",warn:"var(--warn)",info:"var(--info)"}; return S.activity.slice(0,14).map(a=>`<div><span class="ts">${clock(a.t)}</span><span class="dt" style="background:${col[a.k]}"></span><span>${a.m}</span></div>`).join(""); }
+function eaHtml(){ const used = Math.max(0,-S.todayPnl)/S.balance*100;
+ return `<h4>EA status <span class="r" id="hb">heartbeat 2 s ago</span></h4><div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">${eaPill().replace('id="eapill"','')}<span class="pill gold">${S.preset} v3</span></div>
+ <div class="kv"><span>Spread now</span><span class="mono" id="spr">${S.spread} pts</span></div><div class="kv"><span>Ping to broker</span><span class="mono">${S.ping} ms</span></div><div class="kv"><span>Session</span><span>${session()}</span></div><div class="kv"><span>Next news block</span><span class="gd">US CPI in 3h 22m</span></div><div class="kv"><span>Daily loss used</span><span>${fmt(used,1)}% of ${fmt(S.risk.daily,1)}%</span></div><div class="kv"><span>Trades today</span><span>${S.todayTrades} / ${S.risk.maxTrades}</span></div>
+ <div style="display:flex;gap:6px;margin-top:12px">${S.killed?`<button class="btn p w" id="resumeBtn">Resume trading</button>`:`<button class="btn g" style="flex:1" id="pauseBtn">${S.running?"Pause":"Resume"}</button><button class="btn dg" style="flex:1" id="closeAllBtn">Close all</button>`}</div>
+ ${S.killed?"":`<button class="btn d w" style="margin-top:6px" id="killBtn">Kill switch</button>`}`; }
+V.dashboard = () => shell("dashboard","Dashboard",`
+ ${S.killed?'<div class="banner bad"><b>Trading stopped by kill switch.</b> All positions were closed and the EA is paused on every account.<button class="act" id="resumeBanner">Resume</button></div>':""}
+ <div class="kpis" id="kpis">${kpiHtml()}</div>
+ <div class="dash-mid"><div class="card"><h4>XAUUSD <span class="mono" id="px" style="font-weight:600">${fmt(S.price)}</span><span class="r"><span class="tabs" id="tfTabs">${["Tick","M1","M5","M15","H1"].map(t=>`<button class="${t==="M1"?"on":""}">${t}</button>`).join("")}</span></span></h4><canvas id="chart"></canvas><div class="mu" style="font-size:11px;margin-top:6px" id="upd">Updated just now</div></div>
+ <div class="card" id="eaCard">${eaHtml()}</div></div>
+ <div class="dash-bot"><div class="card"><h4>Open positions <span class="r" id="posSum"></span></h4><div id="pos">${posHtml()}</div></div><div class="card"><h4>Live activity <span class="r">all accounts</span></h4><div class="feed" id="feed">${feedHtml()}</div></div></div>`);
+
+/* ---------------- accounts ---------------- */
+V.accounts = () => { const r=S.risk; const lim = S.plan==="Starter"?1:3;
+ const sl=(id,label,val,min,max,step,unit,hint)=>`<div class="field"><label for="${id}">${label}<span class="mono" style="color:var(--text)" id="${id}v">${val}${unit}</span></label><input type="range" class="range" id="${id}" min="${min}" max="${max}" step="${step}" value="${val}" data-unit="${unit}"><span class="mu" style="font-size:11px">${hint}</span></div>`;
+ return shell("accounts","Accounts &amp; EA",`
+ <div class="kpis">${S.accounts.map(a=>`<button class="card" data-acct="${a.login}" style="text-align:left;${a.login===S.selAcct?"border-color:var(--gold)":""}"><div style="display:flex;justify-content:space-between;align-items:center"><b class="mono">${a.login}</b><span class="pill ${a.status==="Running"?"ok":"info"} dot">${a.status}</span></div><div class="mu" style="font-size:11.5px;margin:3px 0 8px">${a.server} · ${a.type}</div><div class="mono" style="font-size:18px;font-weight:600">${a.login==="5102948"?fmt(equityNow()):"50,112.80"}</div><div class="mu" style="font-size:11px">equity · EA ${a.ea}</div></button>`).join("")}
+ ${S.accounts.length<lim?`<button class="card" id="addAcct" style="border-style:dashed;color:var(--muted);display:grid;place-items:center;text-align:center">+ Bind another MT5 account<br><span style="font-size:11px">${lim-S.accounts.length} of ${lim} slots free</span></button>`:""}</div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)">
+ <div class="card"><h4>Risk settings · ${S.selAcct} <span class="r">limits set by your plan</span></h4><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:4px 24px">
+ ${sl("rRisk","Risk per trade",r.risk,0.1,3,0.1,"%","0.1% to 3.0% of equity")}${sl("rDaily","Daily loss limit",r.daily,0.5,10,0.5,"%","stops trading until tomorrow")}${sl("rSpread","Max spread",r.spread,10,60,1," pts","skip entries above this")}${sl("rTrades","Max trades per day",r.maxTrades,5,100,1,"","resets 00:00 broker time")}${sl("rDd","Equity drawdown stop",r.dd,2,20,0.5,"%","close all and pause")}${sl("rLot","Max lot per order",r.maxLot,0.01,5,0.01,"","hard cap")}</div>
+ <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px">${[["news","News blackout ±30 min"],["be","Break-even at +1R"],["trail","Trailing stop"],["asia","Trade Asian session"]].map(([k,l])=>`<label style="display:flex;gap:8px;align-items:center"><button class="tog ${r[k]?"on":""}" data-rt="${k}" aria-label="${l}"></button>${l}</label>`).join("")}</div></div>
+ <div class="card" style="display:flex;flex-direction:column"><h4>Preset</h4><div class="choice">${presetList().map(p=>`<button data-preset2="${p[0]}" class="${S.preset===p[0]?"on":""}"><b>${p[0]}</b><span>${p[1]}</span></button>`).join("")}</div>
+ <h4 style="margin-top:16px">EA &amp; license</h4><div class="kv"><span>License</span><span class="mono">AUSC-7F3K-…-X1LM</span></div><div class="kv"><span>EA version</span><span>v2.4.1 <span class="up">latest</span></span></div><div class="kv"><span>Symbol</span><span class="mono">XAUUSD</span></div><div class="kv"><span>Config status</span><span id="cfgState">${S.applied?'<span class="pill ok dot">Applied</span>':'<span class="pill warn dot">Unsaved changes</span>'}</span></div>
+ <div style="display:flex;gap:8px;margin-top:auto;padding-top:14px"><a class="btn g" style="flex:1" href="#onboarding">Setup guide</a><button class="btn p" style="flex:1" id="saveRisk">Save changes</button></div><div class="mu" style="font-size:11px;margin-top:6px;text-align:center">Changes apply on the next EA heartbeat (within 10 s)</div></div></div>`); };
+
+/* ---------------- performance ---------------- */
+function equitySvg(w,h,sd,axis=true){ let s0=seed; seed=sd*7919; let v=10000; const pts=[]; for(let i=0;i<90;i++){ v+=gauss()*60+18; pts.push(v);} seed=s0;
+ const mx=Math.max(...pts)*1.004, mn=Math.min(...pts)*.996, L=axis?46:0, B=axis?20:4; const X=i=>L+i/89*(w-L-6), Y=y=>6+(mx-y)/(mx-mn)*(h-B-8);
+ const d="M"+pts.map((p,i)=>`${X(i).toFixed(1)} ${Y(p).toFixed(1)}`).join(" L"); const id="eq"+sd;
+ let g=""; if(axis){ for(let k=0;k<4;k++){const yv=mn+(mx-mn)*k/3; g+=`<line x1="${L}" x2="${w}" y1="${Y(yv).toFixed(1)}" y2="${Y(yv).toFixed(1)}" stroke="var(--line2)"/><text x="0" y="${(Y(yv)+4).toFixed(1)}" font-size="10" fill="var(--muted)">${(yv/1000).toFixed(1)}k</text>`;} ["Jul","Aug","Sep"].forEach((m,i)=>g+=`<text x="${L+i*(w-L-30)/2}" y="${h-4}" font-size="10" fill="var(--muted)">${m}</text>`); }
+ const last=pts[89]; return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Equity curve"><defs><linearGradient id="${id}" x1="0" x2="0" y1="0" y2="1"><stop offset="0" stop-color="#E7B54A" stop-opacity=".3"/><stop offset="1" stop-color="#E7B54A" stop-opacity="0"/></linearGradient></defs>${g}<path d="${d} L${X(89)} ${h-B} L${X(0)} ${h-B}Z" fill="url(#${id})"/><path d="${d}" fill="none" stroke="#E7B54A" stroke-width="2"/><circle cx="${X(89)}" cy="${Y(last)}" r="3.5" fill="#E7B54A"/></svg>`; }
+function barsSvg(w,h,vals,labels,pos="#22C55E"){ const mx=Math.max(...vals), mn=Math.min(0,...vals), sc=(h-22)/(mx-mn), z=6+mx*sc, bw=(w-4)/vals.length;
+ return `<svg viewBox="0 0 ${w} ${h}" style="width:100%;height:auto;display:block" role="img" aria-label="Bar chart"><line x1="0" x2="${w}" y1="${z}" y2="${z}" stroke="var(--line)"/>${vals.map((v,i)=>{const bh=Math.abs(v)*sc; return `<rect x="${(2+i*bw+bw*.18).toFixed(1)}" y="${(v>=0?z-bh:z).toFixed(1)}" width="${(bw*.64).toFixed(1)}" height="${Math.max(1,bh).toFixed(1)}" rx="2" fill="${v>=0?pos:"#EF4444"}"><title>${labels[i]||i}: ${v}</title></rect>`+(labels[i]?`<text x="${(2+i*bw+bw/2).toFixed(1)}" y="${h-3}" font-size="9.5" fill="var(--muted)" text-anchor="middle">${labels[i]}</text>`:"")}).join("")}</svg>`; }
+V.performance = () => { const hours=[12,34,-8,22,58,71,40,-15,26,64,88,35,10,-20,5,18,44,30,-12,8,2,-6,0,4]; const hl=hours.map((_,i)=>i%3===0?String(i):"");
+ const months=["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"]; let s0=seed; seed=99;
+ const cell=v=>{ if(v===null) return '<td style="background:var(--line2)"></td>'; const a=Math.min(1,Math.abs(v)/6); return `<td style="background:${v>=0?`rgba(34,197,94,${(.15+.7*a).toFixed(2)})`:`rgba(239,68,68,${(.15+.7*a).toFixed(2)})`}">${v>0?"+":""}${v.toFixed(1)}</td>`; };
+ const heat = `<table class="heat"><tr><td></td>${months.map(m=>`<td class="mu">${m}</td>`).join("")}</tr>${[2025,2026].map(y=>`<tr><td class="mu">${y}</td>${months.map((_,i)=>cell((y===2026&&i>8)||(y===2025&&i<2)?null:Math.round((gauss()*2.8+2.6)*10)/10)).join("")}</tr>`).join("")}</table>`; seed=s0;
+ return shell("performance","Performance",`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><span class="tabs" id="rangeTabs">${["7D","30D","3M","1Y","All"].map(r=>`<button class="${S.perfRange===r?"on":""}" data-r="${r}">${r}</button>`).join("")}</span><select class="sel"><option>All presets</option><option>Balanced</option><option>Conservative</option></select><button class="btn g sm" style="margin-left:auto" id="expPdf">Export monthly report</button></div>
+ <div class="kpis">${[["Net profit","+2,480.35","since 1 Jul","up"],["Profit factor","1.62","gross win ÷ gross loss",""],["Win rate","63.8%","412 trades",""],["Avg win / loss","1.12R / 1.00R","",""],["Avg slippage","0.4 pts","p95 1.3 pts",""],["Max drawdown","−4.8%","on 12 Aug",""]].map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v ${k[3]}" style="font-size:19px">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("")}</div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)"><div class="card"><h4>Equity curve <span class="r">USD · sample data</span></h4>${equitySvg(620,230,5)}</div><div class="card"><h4>P&L by hour (UTC) <span class="r">best: London open</span></h4>${barsSvg(420,230,hours,hl)}</div></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.35fr) minmax(0,1fr)"><div class="card"><h4>Monthly returns % <span class="r">sample data</span></h4><div class="tw">${heat}</div></div>
+ <div class="card"><h4>By entry module</h4><div class="tw"><table class="t"><tr><th>Module</th><th class="n">Trades</th><th class="n">Win %</th><th class="n">PF</th><th class="n">Net</th></tr>${[["Momentum burst",188,"66%","1.81","+1,610"],["Micro breakout",121,"61%","1.44","+702"],["VWAP reversion",103,"62%","1.21","+168"]].map(r=>`<tr><td>${r[0]}</td><td class="n">${r[1]}</td><td class="n">${r[2]}</td><td class="n">${r[3]}</td><td class="n up">${r[4]}</td></tr>`).join("")}</table></div></div></div>`); };
+
+/* ---------------- trades ---------------- */
+function tradeRows(){ const q=S.tradeSearch.toLowerCase(); return S.trades.filter(t=>(S.tradeFilter==="all"||(S.tradeFilter==="won"?t.pnl>0:S.tradeFilter==="lost"?t.pnl<=0:t.side===S.tradeFilter))&&(!q||t.module.toLowerCase().includes(q)||t.reason.toLowerCase().includes(q))); }
+function tradeTable(){ const rows=tradeRows(); const net=rows.reduce((a,b)=>a+b.pnl,0);
+ return `<div class="mu" style="margin-bottom:6px">${rows.length} trades · net <b class="${net>=0?"up":"dn"}">${sgn(net)}</b> · click a row for details</div><div class="tw"><table class="t"><tr><th>Close time (UTC)</th><th>Side</th><th class="n">Lots</th><th class="n">Entry</th><th class="n">Exit</th><th class="n">Points</th><th class="n">Slip</th><th class="n">Spread</th><th class="n">Held</th><th class="n">P&L</th><th>Module</th><th>Exit</th></tr>
+ ${rows.slice(0,40).map((t,i)=>`<tr class="click" data-tr="${S.trades.indexOf(t)}"><td class="mono mu">${t.t.toISOString().slice(5,10)} ${clock(t.t)}</td><td><span class="side-b ${t.side.toLowerCase()}">${t.side}</span></td><td class="n">${fmt(t.lots)}</td><td class="n mono">${fmt(t.entry)}</td><td class="n mono">${fmt(t.exit)}</td><td class="n">${sgn(t.pts*100,0)}</td><td class="n">${fmt(t.slip,1)}</td><td class="n">${t.spread}</td><td class="n">${Math.floor(t.held/60)}m ${t.held%60}s</td><td class="n ${t.pnl>=0?"up":"dn"}">${sgn(t.pnl)}</td><td class="mu">${t.module}</td><td class="mu">${t.reason}</td></tr>`).join("")}</table></div>`; }
+V.trades = () => shell("trades","Trades",`<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center"><input class="inp" id="tSearch" placeholder="Search module or exit reason" style="max-width:260px" value="${esc(S.tradeSearch)}">
+ <span class="tabs" id="tFilter">${[["all","All"],["BUY","Buys"],["SELL","Sells"],["won","Won"],["lost","Lost"]].map(([k,l])=>`<button data-f="${k}" class="${S.tradeFilter===k?"on":""}">${l}</button>`).join("")}</span><button class="btn g sm" style="margin-left:auto" id="csvBtn">Export CSV</button></div>
+ <div class="card" id="tTable">${tradeTable()}</div>`);
+
+/* ---------------- alerts ---------------- */
+const ALERTS=[["Trade opened or closed",[1,1,0]],["Stop loss hit",[1,1,0]],["Daily loss limit reached",[1,1,1]],["EA disconnected for 60 s",[1,1,1]],["High spread, trading paused",[1,0,0]],["Daily summary at 22:00 UTC",[1,1,0]],["Payment failed or license issue",[0,1,1]]];
+ALERTS.forEach((a,i)=>S.alerts[i]=a[1].slice());
+V.alerts = () => shell("alerts","Alerts",`<div class="grid" style="grid-template-columns:minmax(0,1.4fr) minmax(0,1fr)"><div class="grid">
+ <div class="card"><h4>Connected channels</h4><div class="kpis">${[["Telegram",S.tg?"ok":"warn",S.tg?"Connected":"Not connected",S.tg?"@umair_trades":"Tap Connect to open the bot"],["Email","ok","Verified","umair@example.com"],["Mobile push","warn","Not set up","Add the app to your home screen"]].map((c,i)=>`<div class="card" style="background:var(--surface2)"><b>${c[0]}</b><div style="margin:6px 0"><span class="pill ${c[1]} dot">${c[2]}</span></div><div class="mu" style="font-size:11.5px">${c[3]}</div>${i===0&&!S.tg?'<button class="btn p sm" style="margin-top:8px" id="tgBtn">Connect Telegram</button>':""}</div>`).join("")}</div></div>
+ <div class="card"><h4>What to notify <span class="r">critical alerts stay on in at least one channel</span></h4><div class="tw"><table class="t"><tr><th>Event</th><th>Telegram</th><th>Email</th><th>Push</th></tr>${ALERTS.map((a,i)=>`<tr><td>${a[0]}</td>${[0,1,2].map(c=>`<td><button class="tog ${S.alerts[i][c]?"on":""}" data-al="${i}-${c}" aria-label="${a[0]} channel ${c}"></button></td>`).join("")}</tr>`).join("")}</table></div></div></div>
+ <div class="card" style="background:#15202B"><h4>Telegram preview</h4>${[["TP hit +52.10 USD","XAUUSD BUY 0.16 · held 1m 48s<br>Account 5102948 · Balanced","09:51"],["Entry skipped","Spread 34 pts is above your 25 pt limit","09:44"],["Daily summary","14 trades · 71% won · +186.40<br>Drawdown 0.0% · Open dashboard","22:00"]].map(m=>`<div style="background:#1F2C3A;border-radius:12px;padding:10px 12px;margin-bottom:8px"><b class="gd">AurumScalp</b><div style="font-weight:700;margin-top:2px">${m[0]}</div><div class="mu" style="font-size:12px">${m[1]}</div><div class="mu mono" style="font-size:10px;text-align:right">${m[2]}</div></div>`).join("")}</div></div>`);
+
+/* ---------------- billing ---------------- */
+V.billing = () => { const price={Starter:49,Pro:99,Elite:199}[S.plan];
+ return shell("billing","Billing",`${S.cancelled?`<div class="banner warn">Your plan is set to cancel on 1 Oct 2026. The EA stops opening trades after that date.<button class="act" id="undoCancel">Keep my plan</button></div>`:`<div class="banner warn">Example state: your card expires this month.<button class="act" id="updCard">Update card</button></div>`}
+ <div class="grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)"><div class="card"><h4>Current plan</h4><div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><span style="font-size:26px;font-weight:800">${S.plan}</span><span class="mu">$${price} / month</span><span class="pill ${S.cancelled?"warn":"ok"} dot">${S.cancelled?"Cancels 1 Oct":"Active"}</span></div><div class="mu" style="margin:6px 0 14px">Renews 1 Oct 2026 · Visa ending 4242</div>
+ <div class="field"><label>MT5 accounts <span style="color:var(--text)">${S.accounts.length} of ${S.plan==="Starter"?1:3}</span></label><div style="height:6px;background:#2A3446;border-radius:6px"><div style="height:6px;border-radius:6px;background:var(--gold);width:${S.accounts.length/(S.plan==="Starter"?1:3)*100}%"></div></div></div>
+ <div style="display:flex;gap:8px;flex-wrap:wrap">${S.plan!=="Elite"?'<button class="btn p" id="upBtn">Upgrade to Elite</button>':""}<button class="btn g" id="yrBtn">Switch to yearly (save $${price*2})</button><button class="btn g" id="payPortal">Manage payment</button></div></div>
+ <div class="card"><h4>Elite · hosted</h4><p class="mu">We run MT5 for you on low-latency servers in London and New York. No PC or VPS needed.</p><div class="kv"><span>Managed terminals</span><span>24/5</span></div><div class="kv"><span>Auto-restart and monitoring</span><span>✓</span></div><div class="kv"><span>Price</span><span class="mono">$199 / month</span></div></div></div>
+ <div class="grid" style="grid-template-columns:minmax(0,1.2fr) minmax(0,1fr)"><div class="card"><h4>Invoices</h4><div class="tw"><table class="t"><tr><th>Invoice</th><th>Date</th><th class="n">Amount</th><th>Status</th></tr>${[["INV-2026-0912","1 Sep 2026","$99.00","Paid"],["INV-2026-0811","1 Aug 2026","$99.00","Paid"],["INV-2026-0710","1 Jul 2026","$49.00","Paid"],["INV-2026-0609","1 Jun 2026","$0.00","Trial"]].map(r=>`<tr><td class="mono">${r[0]}</td><td>${r[1]}</td><td class="n">${r[2]}</td><td><span class="pill ${r[3]==="Paid"?"ok":"info"} dot">${r[3]}</span></td></tr>`).join("")}</table></div></div>
+ <div class="card"><h4>Cancel subscription</h4><p class="mu">You keep access until the end of the paid period. After that the EA stops opening new trades and manages open ones to close.</p><button class="btn dg" id="cancelBtn" ${S.cancelled?"disabled":""}>Cancel plan</button></div></div>`); };
+
+/* ---------------- settings ---------------- */
+V.settings = () => { const t=S.settingsTab; let body="";
+ if(t==="Profile") body=`<div class="card" style="max-width:560px"><h4>Profile</h4><div class="field"><label for="pfN">Name</label><input class="inp" id="pfN" value="Umair Noor"></div><div class="field"><label for="pfE">Email</label><input class="inp" id="pfE" value="umair@example.com"></div><div class="field"><label for="pfC">Country</label><select class="inp" id="pfC"><option>Pakistan</option><option>United Arab Emirates</option></select></div><button class="btn p" data-saved>Save profile</button></div>`;
+ if(t==="Security") body=`<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)"><div class="grid"><div class="card"><h4>Two-factor authentication <span class="pill ok dot">On</span></h4><p class="mu">Authenticator app · added 3 Jul 2026 · 8 backup codes left</p><div style="display:flex;gap:8px;margin-top:10px"><button class="btn g" data-saved="Backup codes shown">Show backup codes</button><button class="btn g" data-saved="2FA reset email sent">Reset 2FA</button></div></div>
+ <div class="card"><h4>Password</h4><div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr))"><div class="field"><label for="pw1">Current password</label><input class="inp" id="pw1" type="password"></div><div class="field"><label for="pw2">New password</label><input class="inp" id="pw2" type="password" placeholder="At least 12 characters"></div></div><button class="btn p" data-saved="Password updated">Update password</button></div>
+ <div class="card"><h4>Active sessions</h4><div class="tw"><table class="t"><tr><th>Device</th><th>Location</th><th>Last active</th><th></th></tr>${[["Chrome · Windows","Karachi, PK","Now"],["Safari · iPhone","Karachi, PK","2 h ago"],["Firefox · Linux","Frankfurt, DE","3 days ago"]].map((s,i)=>`<tr><td>${s[0]}</td><td class="mu">${s[1]}</td><td>${s[2]}</td><td>${i?`<button class="btn sm dg" data-saved="Session revoked">Revoke</button>`:'<span class="mu">This device</span>'}</td></tr>`).join("")}</table></div></div></div>
+ <div class="card"><h4>Security log</h4>${[["29 Sep 09:02","Login · 2FA passed"],["28 Sep 21:40","Risk settings changed"],["27 Sep 18:11","New device: iPhone"],["26 Sep 08:55","License key viewed"]].map(l=>`<div class="kv"><span class="mono">${l[0]}</span><span>${l[1]}</span></div>`).join("")}</div></div>`;
+ if(t==="Preferences") body=`<div class="card" style="max-width:560px"><h4>Preferences</h4><div class="kv"><span>Theme</span><span class="tabs"><button class="on">Dark</button><button>Light</button><button>System</button></span></div><div class="kv"><span>Timezone</span><span>Asia/Karachi</span></div><div class="kv"><span>Chart time</span><span>Broker time</span></div><div class="kv"><span>Language</span><span>English</span></div></div>`;
+ if(t==="Team") body=`<div class="card" style="max-width:640px"><h4>Team <span class="r">Pro and above</span></h4><div class="tw"><table class="t"><tr><th>Member</th><th>Role</th><th></th></tr><tr><td>Umair Noor</td><td>Owner</td><td class="mu">You</td></tr><tr><td>support@partner.com</td><td>Viewer</td><td><button class="btn sm g" data-saved="Invite resent">Resend invite</button></td></tr></table></div><button class="btn g" style="margin-top:10px" data-saved="Invite sent">Invite member</button></div>`;
+ return shell("settings","Settings",`<div class="tabs" id="setTabs">${["Profile","Security","Team","Preferences"].map(x=>`<button class="${x===t?"on":""}" data-t="${x}">${x}</button>`).join("")}</div>${body}`); };
+
+/* ---------------- admin ---------------- */
+const CUST=[["Ahmed Traders","Elite","Active","3/3","$199","ok"],["J. Martinez","Pro","Past due","2/3","$99","warn"],["Nord Capital","Pro","Active","3/3","$99","ok"],["S. Khan","Starter","Trialing","1/1","$0","info"],["L. Chen","Pro","Suspended","0/3","$99","bad"],["R. Ali","Pro","Active","1/3","$99","ok"],["Gulf Alpha LLC","Elite","Active","2/3","$199","ok"]];
+V.admin = () => `<div class="shell"><aside class="rail"><div class="logo"><div class="mark">A</div>Admin</div>${["Overview","Customers","Subscriptions","Licenses & abuse","Hosted farm","Presets & EA releases","Audit log"].map((n,i)=>`<a class="nav ${i===0?"on":""}" href="#admin">${ico(["dash","acct","card","shield","gear","perf","trades"][i])}${esc(n)}</a>`).join("")}<div class="plan">Signed in as <b style="color:var(--text)">owner</b><br>2FA enforced · <a class="gd" href="#dashboard">Customer view</a></div></aside>
+<div class="main"><div class="top"><h1>Admin overview</h1><select class="sel"><option>Last 30 days</option><option>Last 90 days</option></select><span class="pill ok dot">All systems normal</span><button class="avatar">UN</button></div><div class="content">
+<div class="kpis">${[["MRR","$18,420","+2.8% vs last month"],["Active subscriptions","212","+14 this month"],["Trials","38","41% convert to paid"],["Churn · 30d","3.1%","down 0.4 pts"],["EAs online","187 / 240","3 stale heartbeats"]].map(k=>`<div class="card kpi"><div class="l">${k[0]}</div><div class="v">${k[1]}</div><div class="d">${k[2]}</div></div>`).join("")}</div>
+<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)"><div class="card"><h4>MRR, last 12 months <span class="r">USD thousands · sample data</span></h4>${barsSvg(560,200,[8.1,9.4,10.2,11.8,12.6,13.9,14.4,15.8,16.3,17.1,17.9,18.4],["O","N","D","J","F","M","A","M","J","J","A","S"],"#E7B54A")}</div>
+<div class="card"><h4>Needs attention</h4>${[["bad","License AUSC-91… used on 6 accounts","Suspend"],["warn","7 payments failed in 24 h","Review"],["warn","Farm server LDN-01 at 84% capacity","Add server"],["info","EA v2.4.2 rolling out to 5%","Pause rollout"]].map(a=>`<div class="kv" style="align-items:center"><span style="display:flex;gap:8px;align-items:center;color:var(--text)"><span class="pill ${a[0]} dot" style="padding:2px 5px"></span>${a[1]}</span><button class="btn sm g" data-saved="${a[2]}: done">${a[2]}</button></div>`).join("")}</div></div>
+<div class="grid" style="grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)"><div class="card"><h4>Customers <span class="r"><input class="inp" id="cSearch" placeholder="Search customers" style="padding:5px 9px;width:180px"></span></h4><div class="tw" id="custT">${custTable("")}</div></div>
+<div class="card"><h4>Hosted farm capacity</h4>${[["LDN-01",21,25],["LDN-02",17,25],["NY-01",12,25]].map(f=>`<div style="margin-bottom:12px"><div style="display:flex;justify-content:space-between"><span class="mono">${f[0]}</span><span class="mu">${f[1]} of ${f[2]} slots</span></div><div style="height:6px;background:#2A3446;border-radius:6px;margin-top:6px"><div style="height:6px;border-radius:6px;width:${f[1]/f[2]*100}%;background:${f[1]/f[2]>.8?"var(--warn)":"var(--gold)"}"></div></div></div>`).join("")}<button class="btn g w" data-saved="Provisioning NY-02">Add farm server</button></div></div></div></div></div>`;
+function custTable(q){ return `<table class="t"><tr><th>Customer</th><th>Plan</th><th>Status</th><th class="n">Accounts</th><th class="n">MRR</th><th></th></tr>${CUST.filter(c=>c[0].toLowerCase().includes(q.toLowerCase())).map(c=>`<tr><td>${c[0]}</td><td>${c[1]}</td><td><span class="pill ${c[5]} dot">${c[2]}</span></td><td class="n">${c[3]}</td><td class="n">${c[4]}</td><td><button class="btn sm g" data-saved="Opened ${c[0]} (read-only, audited)">View as</button></td></tr>`).join("")}</table>`; }
+
+/* ---------------- modal & toast ---------------- */
+function toast(msg, kind="ok", sub=""){ const col={ok:"var(--good)",bad:"var(--bad)",warn:"var(--warn)",info:"var(--info)"}[kind]; const el=document.createElement("div"); el.className="toast"; el.innerHTML=`<span class="dt" style="background:${col}"></span><div><b>${msg}</b>${sub?`<div class="mu" style="font-size:11.5px">${sub}</div>`:""}</div>`; $("#toasts").appendChild(el); setTimeout(()=>el.remove(),3600); }
+function modal(html){ const m=$("#modal"); m.innerHTML=`<div class="mbox" role="dialog" aria-modal="true">${html}</div>`; m.hidden=false; m.onclick=e=>{ if(e.target===m) closeModal(); }; const f=m.querySelector("input,button"); if(f) f.focus(); }
+function closeModal(){ $("#modal").hidden=true; $("#modal").innerHTML=""; }
+document.addEventListener("keydown", e=>{ if(e.key==="Escape"){ closeModal(); const d=document.querySelector(".drawer"); if(d) d.remove(); } });
+function killModal(){ const n=S.positions.length, open=S.positions.reduce((a,p)=>a+pnlOf(p),0);
+ modal(`<h3>Stop all trading?</h3><p class="mu">This closes <b style="color:var(--text)">${n} position${n===1?"":"s"}</b> at market (about <b class="${open>=0?"up":"dn"}">${sgn(open)}</b>) and pauses the EA on <b style="color:var(--text)">${S.accounts.length} accounts</b>. You resume manually.</p>
+ <div class="field" style="margin-top:12px"><label for="killTxt">Type STOP to confirm</label><input class="inp mono" id="killTxt" autocomplete="off"></div>
+ <div style="display:flex;gap:8px"><button class="btn g" style="flex:1" id="mCancel">Cancel</button><button class="btn d" style="flex:1.4" id="mKill" disabled>Close all and pause</button></div>`);
+ $("#killTxt").oninput=e=>{ $("#mKill").disabled = e.target.value.trim().toUpperCase()!=="STOP"; };
+ $("#mCancel").onclick=closeModal; $("#mKill").onclick=()=>{ closeAll("Kill switch"); S.killed=true; S.running=false; closeModal(); toast("Trading stopped","bad","All positions closed, EA paused on every account"); render(); }; }
+function closeAll(why){ while(S.positions.length) closePos(S.positions[0].id, why); }
+function closePos(id, why){ const i=S.positions.findIndex(p=>p.id===id); if(i<0) return; const p=S.positions[i]; const v=pnlOf(p); S.positions.splice(i,1); S.balance+=v; S.todayPnl+=v; S.todayTrades++; if(v>0) S.todayWins++;
+ const pts=(p.side==="BUY"?S.price-p.entry:p.entry-S.price); S.trades.unshift({t:new Date(), side:p.side, lots:p.lots, entry:p.entry, exit:S.price, pts, pnl:v, slip:Math.abs(gauss()*.3+.2), spread:S.spread, held:Math.round((Date.now()-p.opened)/1000), module:p.module, reason:why});
+ S.activity.unshift({t:new Date(), k:v>=0?"ok":"bad", m:`${why}: ${p.side} ${fmt(p.lots)} closed ${sgn(v)}`}); }
+
+/* ---------------- chart ---------------- */
+function drawChart(){ const c=$("#chart"); if(!c) return; const dpr=window.devicePixelRatio||1; const w=c.clientWidth, h=c.clientHeight; if(!w||!h) return; if(c.width!==Math.round(w*dpr)){ c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);} const x=c.getContext("2d"); x.setTransform(dpr,0,0,dpr,0,0); x.clearRect(0,0,w,h);
+ const data=S.candles.slice(-Math.max(30,Math.min(80,Math.floor(w/9)))); const pr=62, bt=18; let mx=-1e9, mn=1e9; data.forEach(d=>{mx=Math.max(mx,d.h);mn=Math.min(mn,d.l);}); S.positions.forEach(p=>{mx=Math.max(mx,p.entry+p.tp);mn=Math.min(mn,p.entry-p.sl);}); mx+=.6; mn-=.6;
+ const Y=v=>6+(mx-v)/(mx-mn)*(h-bt-10), cw=(w-pr-6)/data.length;
+ x.font="10px 'JetBrains Mono', monospace"; x.textBaseline="middle";
+ for(let k=0;k<5;k++){ const v=mn+(mx-mn)*k/4, y=Y(v); x.strokeStyle="#1A2230"; x.beginPath(); x.moveTo(0,y); x.lineTo(w-pr,y); x.stroke(); x.fillStyle="#6B778A"; x.fillText(fmt(v),w-pr+6,y); }
+ data.forEach((d,i)=>{ const cx=3+i*cw+cw/2, up=d.c>=d.o; x.strokeStyle=x.fillStyle=up?"#22C55E":"#EF4444"; x.beginPath(); x.moveTo(cx,Y(d.h)); x.lineTo(cx,Y(d.l)); x.stroke(); const y1=Y(Math.max(d.o,d.c)), y2=Y(Math.min(d.o,d.c)); x.fillRect(cx-cw*.33,y1,cw*.66,Math.max(1,y2-y1)); });
+ const tag=(v,col,label,ink)=>{ const y=Y(v); x.setLineDash([4,3]); x.strokeStyle=col; x.beginPath(); x.moveTo(0,y); x.lineTo(w-pr,y); x.stroke(); x.setLineDash([]); x.fillStyle=col; const tw=x.measureText(label).width+10; x.fillRect(w-pr-tw-2,y-8,tw,16); x.fillStyle=ink; x.fillText(label,w-pr-tw+3,y); };
+ S.positions.forEach(p=>{ const d=p.side==="BUY"?1:-1; tag(p.entry+d*p.tp,"#22C55E","TP","#06120A"); tag(p.entry-d*p.sl,"#EF4444","SL","#fff"); tag(p.entry,"#E7B54A",`${p.side} ${fmt(p.lots)}`,"#1B1304"); });
+ const y=Y(S.price); x.fillStyle="#E7EBF1"; x.fillRect(w-pr+2,y-9,pr-4,18); x.fillStyle="#090D14"; x.fillText(fmt(S.price),w-pr+6,y);
+ x.fillStyle="#6B778A"; x.font="10px 'Manrope', sans-serif"; const now=new Date(); for(let k=0;k<5;k++){ const t=new Date(now - (4-k)*data.length/4*60e3); x.fillText(pad(t.getUTCHours())+":"+pad(t.getUTCMinutes()), 3+k*(w-pr-40)/4, h-8); } }
+window.addEventListener("resize", drawChart);
+
+/* ---------------- simulation ---------------- */
+let tick=0;
+setInterval(()=>{ tick++; S.price += gauss()*0.32 + 0.004; const last=S.candles[S.candles.length-1]; last.c=S.price; last.h=Math.max(last.h,S.price); last.l=Math.min(last.l,S.price);
+ if(tick%12===0){ S.candles.push({o:S.price,h:S.price,l:S.price,c:S.price}); if(S.candles.length>200) S.candles.shift(); }
+ if(tick%5===0) S.spread = Math.max(12, Math.min(40, Math.round(S.spread + gauss()*2 + (18-S.spread)*.2)));
+ S.positions.slice().forEach(p=>{ const d=p.side==="BUY"?1:-1, mv=(S.price-p.entry)*d; if(mv>=p.tp){ closePos(p.id,"TP hit"); toastIf("TP hit","ok"); } else if(mv<=-p.sl){ closePos(p.id,"SL hit"); toastIf("SL hit","bad"); } else if(Date.now()-p.opened>150e3 && rnd()<.02){ closePos(p.id,"Time stop"); } });
+ if(S.running && !S.killed && S.positions.length<2 && rnd()<.035){ if(S.spread>S.risk.spread){ if(rnd()<.3) S.activity.unshift({t:new Date(),k:"warn",m:`Entry skipped: spread ${S.spread} > ${S.risk.spread}`}); } else { const side=rnd()>.5?"BUY":"SELL", lots=Math.min(S.risk.maxLot, Math.floor(equityNow()*S.risk.risk/100/(1.6*100)*100)/100); const mods=["Momentum","Breakout","VWAP rev."]; S.positions.push({id:Date.now(), side, lots, entry:S.price+(side==="BUY"?.08:-.08), sl:1.6, tp:3.2, module:mods[Math.floor(rnd()*3)], opened:Date.now()}); S.activity.unshift({t:new Date(),k:"info",m:`${side} ${fmt(lots)} filled @ ${fmt(S.price)} · slip 0.${Math.floor(rnd()*4)}`}); } }
+ if(S.activity.length>40) S.activity.length=40;
+ live(); }, 700);
+function toastIf(m,k){ if(current()==="dashboard") toast(m,k); }
+function live(){ const k=current();
+ if(k==="dashboard"){ const px=$("#px"); if(px){ px.textContent=fmt(S.price); } const kp=$("#kpis"); if(kp) kp.innerHTML=kpiHtml(); const pos=$("#pos"); if(pos && !pos.contains(document.activeElement)) pos.innerHTML=posHtml(); const ps=$("#posSum"); if(ps){ const o=S.positions.reduce((a,p)=>a+pnlOf(p),0); ps.innerHTML=`${S.positions.length} open · <span class="${o>=0?"up":"dn"}">${sgn(o)}</span>`; } const fd=$("#feed"); if(fd) fd.innerHTML=feedHtml(); const spr=$("#spr"); if(spr) spr.innerHTML=`${S.spread} pts <span class="${S.spread>S.risk.spread?"dn":"up"}">●</span>`; const ep=$("#eapill"); if(ep) ep.outerHTML=eaPill(); const hb=$("#hb"); if(hb) hb.textContent=`heartbeat ${1+tick%3} s ago`; drawChart(); }
+ if(k==="landing") drawChart(); }
+
+/* ---------------- render + wiring ---------------- */
+function render(){ const k=current(); if(!S.authed && ["dashboard","accounts","performance","trades","alerts","billing","settings","admin"].includes(k)) S.authed=true; /* prototype: allow direct jump */
+ closeModal(); const d=document.querySelector(".drawer"); if(d) d.remove();
+ $("#root").innerHTML = V[k](); document.querySelectorAll("#chips a").forEach(a=>a.classList.toggle("on",a.dataset.k===k)); $("#jump").value=k; window.scrollTo(0,0); wire(k); drawChart(); }
+function on(sel, ev, fn){ document.querySelectorAll(sel).forEach(el=>el.addEventListener(ev,fn)); }
+function wireOtp(){ const ins=[...document.querySelectorAll(".otp input")]; ins.forEach((el,i)=>{ el.addEventListener("input",()=>{ el.value=el.value.replace(/\D/g,"").slice(-1); if(el.value&&ins[i+1]) ins[i+1].focus(); }); el.addEventListener("keydown",e=>{ if(e.key==="Backspace"&&!el.value&&ins[i-1]) ins[i-1].focus(); }); el.addEventListener("paste",e=>{ const t=(e.clipboardData.getData("text")||"").replace(/\D/g,""); if(t.length>=6){ e.preventDefault(); ins.forEach((x,j)=>x.value=t[j]||""); ins[5].focus(); } }); }); if(ins[0]) ins[0].focus(); return ()=>ins.map(x=>x.value).join(""); }
+function wire(k){
+ const av=$("#avatarBtn"); if(av) av.onclick=()=>modal(`<h3>Umair Noor</h3><p class="mu">umair@example.com · ${S.plan} plan</p><div style="display:flex;flex-direction:column;gap:8px;margin-top:12px"><a class="btn g" href="#settings" onclick="document.getElementById('modal').hidden=true">Settings</a><a class="btn g" href="#admin" onclick="document.getElementById('modal').hidden=true">Admin console</a><button class="btn dg" id="logout">Log out</button></div>`) || ($("#logout").onclick=()=>{ S.authed=false; closeModal(); go("login"); toast("Logged out","info"); });
+ const as=$("#acctSel"); if(as) as.onchange=e=>{ S.selAcct=e.target.value; toast("Switched account",'info',e.target.value); render(); };
+ if(k==="pricing"){ on("#billTabs button","click",e=>{ S.yearly=e.currentTarget.dataset.y==="1"; render(); }); }
+ on("[data-plan]","click",e=>{ const p=e.currentTarget.dataset.plan; if(p) S.plan=p; if(k==="onboarding"){ e.preventDefault(); render(); } });
+ if(k==="login"){ $("#loginForm").onsubmit=e=>{ e.preventDefault(); const pw=$("#lp").value; if(pw.length<6){ $("#lerr").innerHTML='<p class="err">Email or password is incorrect. Check both and try again.</p>'; $("#lp").focus(); return; } go("twofa"); }; $("#gLogin").onclick=()=>go("twofa"); $("#forgot").onclick=e=>{ e.preventDefault(); toast("Reset link sent","info","Check umair@example.com"); }; $("#remember").onclick=e=>e.currentTarget.classList.toggle("on"); }
+ if(k==="twofa"){ const get=wireOtp(); $("#otpForm").onsubmit=e=>{ e.preventDefault(); if(get().length<6){ $("#oerr").innerHTML='<p class="err">Enter all 6 digits.</p>'; return; } S.authed=true; toast("Signed in","ok","Welcome back, Umair"); go("dashboard"); }; }
+ if(k==="signup"){ $("#sp").oninput=e=>{ const v=e.target.value; const sc=(v.length>=8)+(v.length>=12)+/\d/.test(v)+/[^A-Za-z0-9]/.test(v); const cols=["#EF4444","#F59E0B","#E7B54A","#22C55E"]; document.querySelectorAll("#pwm span").forEach((s,i)=>s.style.background=i<sc?cols[Math.max(0,sc-1)]:"#2A3446"); $("#pwl").textContent=["Too short","Weak","Fair","Good","Strong password"][sc]; };
+  $("#consent").onclick=e=>e.currentTarget.classList.toggle("on");
+  $("#suForm").onsubmit=e=>{ e.preventDefault(); if($("#sp").value.length<12){ $("#serr").innerHTML='<p class="err">Use a password with at least 12 characters.</p>'; return; } if(!$("#consent").classList.contains("on")){ $("#serr").innerHTML='<p class="err">Please accept the Terms and Risk Disclosure to continue.</p>'; return; } go("verify"); }; }
+ if(k==="verify"){ const get=wireOtp(); let n=42; const iv=setInterval(()=>{ const r=$("#resend"); if(!r){clearInterval(iv);return;} n--; r.innerHTML = n>0?`Resend code in 0:${pad(n)}`:'<a class="gd" href="#verify">Resend code</a>'; if(n<=0) clearInterval(iv); },1000); $("#verForm").onsubmit=e=>{ e.preventDefault(); if(get().length<6){ $("#oerr").innerHTML='<p class="err">Enter the 6-digit code from the email.</p>'; return; } toast("Email verified"); go("checkout"); }; }
+ if(k==="checkout"){ $("#payBtn").onclick=e=>{ const b=e.currentTarget; b.disabled=true; b.textContent="Processing…"; setTimeout(()=>{ S.authed=true; S.ob.step=2; toast("Trial started","ok",`${S.plan} · license AUSC-7F3K-92QD-X1LM issued`); go("onboarding"); },1100); }; }
+ if(k==="onboarding"){ const o=S.ob;
+  on("[data-step]","click",e=>{ const s=+e.currentTarget.dataset.step; if(s<=o.step){ o.step=s; render(); } });
+  on("[data-next]","click",()=>{ o.step=Math.min(5,o.step+1); render(); }); on("[data-back]","click",()=>{ o.step=Math.max(1,o.step-1); render(); });
+  on("[data-mode]","click",e=>{ o.mode=e.currentTarget.dataset.mode; render(); }); on("[data-preset]","click",e=>{ o.preset=e.currentTarget.dataset.preset; render(); });
+  const cp=$("#copyLic"); if(cp) cp.onclick=()=>{ const v=$("#lic").value; (navigator.clipboard?navigator.clipboard.writeText(v):Promise.reject()).then(()=>toast("License key copied")).catch(()=>{ $("#lic").select(); toast("Key selected","info","Press Ctrl+C to copy"); }); };
+  const dl=$("#dlEa"); if(dl) dl.onclick=()=>toast("Download starts in the real app","info","AurumScalp.ex5 · v2.4.1");
+  const tr=$("#trouble"); if(tr) tr.onclick=e=>{ e.preventDefault(); modal(`<h3>EA not connecting?</h3>${["WebRequest URL added in Tools → Options → Expert Advisors","Algo Trading button is green","EA is on an XAUUSD chart (check the symbol suffix)","License key pasted without spaces","Market is open (Sunday 22:00 to Friday 21:00 UTC)"].map(t=>`<div class="kv"><span>☐</span><span style="flex:1">${t}</span></div>`).join("")}<button class="btn p w" style="margin-top:12px" onclick="document.getElementById('modal').hidden=true">Got it</button>`); };
+  const bb=$("#bindBtn"); if(bb) bb.onclick=()=>{ if(!/^\d{5,10}$/.test($("#obLogin").value.trim())){ toast("Check the login number","bad","MT5 logins are 5 to 10 digits"); return; } o.bound=true; render(); setTimeout(()=>{ if(current()==="onboarding"&&o.step===3){ o.connected=true; toast("EA connected","ok","Handshake from 5102948"); render(); } },2600); };
+  const gl=$("#goLive"); if(gl) gl.onclick=()=>{ S.preset=o.preset; S.authed=true; toast("You're live on demo","ok",`Preset ${o.preset}`); go("dashboard"); }; }
+ if(k==="dashboard"){ const pb=$("#pauseBtn"); if(pb) pb.onclick=()=>{ S.running=!S.running; S.activity.unshift({t:new Date(),k:S.running?"info":"warn",m:S.running?"EA resumed from dashboard":"EA paused from dashboard"}); toast(S.running?"EA resumed":"EA paused", S.running?"ok":"warn", S.running?"New entries allowed":"Open trades keep their SL/TP"); $("#eaCard").innerHTML=eaHtml(); wire("dashboard"); };
+  const ca=$("#closeAllBtn"); if(ca) ca.onclick=()=>{ const n=S.positions.length; if(!n){ toast("No open positions","info"); return; } modal(`<h3>Close ${n} position${n>1?"s":""}?</h3><p class="mu">They close at market now. The EA keeps running and can open new trades.</p><div style="display:flex;gap:8px;margin-top:14px"><button class="btn g" style="flex:1" id="mC">Cancel</button><button class="btn dg" style="flex:1" id="mOk">Close all</button></div>`); $("#mC").onclick=closeModal; $("#mOk").onclick=()=>{ closeAll("Manual close"); closeModal(); toast("Positions closed"); live(); }; };
+  const kb=$("#killBtn"); if(kb) kb.onclick=killModal;
+  const rs=$("#resumeBtn")||$("#resumeBanner"); [$("#resumeBtn"),$("#resumeBanner")].forEach(b=>{ if(b) b.onclick=()=>{ S.killed=false; S.running=true; toast("Trading resumed","ok"); render(); }; });
+  $("#pos").addEventListener("click",e=>{ const b=e.target.closest("[data-close]"); if(b){ closePos(+b.dataset.close,"Manual close"); toast("Position closed"); live(); } });
+  on("#tfTabs button","click",e=>{ document.querySelectorAll("#tfTabs button").forEach(b=>b.classList.remove("on")); e.currentTarget.classList.add("on"); toast(`${e.currentTarget.textContent} timeframe`,"info","The prototype streams M1 data"); }); }
+ if(k==="accounts"){ const markDirty=()=>{ S.applied=false; $("#cfgState").innerHTML='<span class="pill warn dot">Unsaved changes</span>'; };
+  const map={rRisk:"risk",rDaily:"daily",rSpread:"spread",rTrades:"maxTrades",rDd:"dd",rLot:"maxLot"};
+  document.querySelectorAll(".range").forEach(r=>r.oninput=e=>{ const v=+e.target.value; S.risk[map[e.target.id]]=v; $("#"+e.target.id+"v").textContent=v+e.target.dataset.unit; markDirty(); });
+  on("[data-rt]","click",e=>{ const key=e.currentTarget.dataset.rt; S.risk[key]=!S.risk[key]; e.currentTarget.classList.toggle("on"); markDirty(); });
+  on("[data-preset2]","click",e=>{ S.preset=e.currentTarget.dataset.preset2; const P={Conservative:[0.5,20],Balanced:[1.0,40],Aggressive:[1.5,60],"Prop-Firm":[0.5,30]}[S.preset]; S.risk.risk=P[0]; S.risk.maxTrades=P[1]; if(S.preset==="Prop-Firm") S.risk.daily=4; S.applied=false; render(); });
+  on("[data-acct]","click",e=>{ S.selAcct=e.currentTarget.dataset.acct; render(); });
+  const aa=$("#addAcct"); if(aa) aa.onclick=()=>{ modal(`<h3>Bind another MT5 account</h3><div class="field"><label for="naL">MT5 login number</label><input class="inp mono" id="naL" placeholder="e.g. 8801234"></div><div class="field"><label for="naS">Broker server</label><select class="inp" id="naS"><option>Exness-MT5Real</option><option>ICMarketsSC-Live</option></select></div><div style="display:flex;gap:8px"><button class="btn g" style="flex:1" id="naC">Cancel</button><button class="btn p" style="flex:1" id="naOk">Bind account</button></div>`); $("#naC").onclick=closeModal; $("#naOk").onclick=()=>{ const l=$("#naL").value.trim(); if(!/^\d{5,10}$/.test(l)){ toast("Enter a 5 to 10 digit login","bad"); return; } S.accounts.push({login:l,server:$("#naS").value,type:"Live",status:"Waiting",ea:"—"}); closeModal(); toast("Account bound","ok","Start the EA on that terminal to connect"); render(); }; };
+  $("#saveRisk").onclick=()=>{ $("#cfgState").innerHTML='<span class="pill warn dot">Pending</span>'; toast("Saved","warn","Waiting for the EA heartbeat…"); setTimeout(()=>{ S.applied=true; const c=$("#cfgState"); if(c) c.innerHTML='<span class="pill ok dot">Applied</span>'; S.activity.unshift({t:new Date(),k:"info",m:`Preset ${S.preset} applied · risk ${S.risk.risk}%`}); toast("Settings applied","ok",`EA confirmed ${S.preset} at ${clock(new Date())} UTC`); },2200); }; }
+ if(k==="performance"){ on("#rangeTabs button","click",e=>{ S.perfRange=e.currentTarget.dataset.r; render(); }); $("#expPdf").onclick=()=>toast("Report generated","ok","Monthly statement is emailed in the real app"); }
+ if(k==="trades"){ const refresh=()=>{ $("#tTable").innerHTML=tradeTable(); };
+  $("#tSearch").oninput=e=>{ S.tradeSearch=e.target.value; refresh(); };
+  on("#tFilter button","click",e=>{ S.tradeFilter=e.currentTarget.dataset.f; document.querySelectorAll("#tFilter button").forEach(b=>b.classList.toggle("on",b===e.currentTarget)); refresh(); });
+  $("#csvBtn").onclick=()=>toast("CSV export","info",`${tradeRows().length} rows · downloads in the real app`);
+  $("#tTable").addEventListener("click",e=>{ const r=e.target.closest("[data-tr]"); if(!r) return; const t=S.trades[+r.dataset.tr]; const dr=document.createElement("div"); dr.className="drawer"; dr.innerHTML=`<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span class="side-b ${t.side.toLowerCase()}">${t.side}</span><b style="font-size:16px">${fmt(t.lots)} lots XAUUSD</b><button class="btn sm g" style="margin-left:auto" id="drX">Close</button></div><div class="kpi"><div class="l">Result</div><div class="v ${t.pnl>=0?"up":"dn"}">${sgn(t.pnl)} USD</div></div><div style="margin-top:12px">${[["Closed",t.t.toUTCString().slice(5,25)+" UTC"],["Entry",fmt(t.entry)],["Exit",fmt(t.exit)],["Points",sgn(t.pts*100,0)],["Slippage",fmt(t.slip,1)+" pts"],["Spread at entry",t.spread+" pts"],["Held",Math.floor(t.held/60)+"m "+t.held%60+"s"],["Entry module",t.module],["Exit reason",t.reason]].map(x=>`<div class="kv"><span>${x[0]}</span><span class="mono">${x[1]}</span></div>`).join("")}</div><h4 style="margin:16px 0 8px">Order events</h4>${["Signal: momentum burst, 11 ticks in 4 s","Order sent · deviation 5 pts","Filled","Break-even moved at +1R",t.reason].map((x,i)=>`<div class="kv"><span class="mono">+${i*7}s</span><span>${x}</span></div>`).join("")}`; document.body.appendChild(dr); $("#drX").onclick=()=>dr.remove(); }); }
+ if(k==="alerts"){ on("[data-al]","click",e=>{ const [i,c]=e.currentTarget.dataset.al.split("-").map(Number); const crit=i===2||i===3; const row=S.alerts[i]; if(crit && row[c] && row.filter(Boolean).length===1){ toast("Keep one channel on","warn","Critical alerts need at least one channel"); return; } row[c]=row[c]?0:1; e.currentTarget.classList.toggle("on"); });
+  const tg=$("#tgBtn"); if(tg) tg.onclick=()=>{ tg.disabled=true; tg.textContent="Waiting for Telegram…"; setTimeout(()=>{ S.tg=true; toast("Telegram connected","ok","@umair_trades"); render(); },1600); }; }
+ if(k==="billing"){ const up=$("#upBtn"); if(up) up.onclick=()=>{ modal(`<h3>Upgrade to Elite</h3><p class="mu">We will host your MT5 terminals. The change starts today.</p><div class="kv"><span>Elite</span><span class="mono">$199.00 / month</span></div><div class="kv"><span>Credit for unused Pro days</span><span class="mono up">−$34.48</span></div><div class="kv"><span>Due today (prorated)</span><span class="mono gd">$64.52</span></div><div style="display:flex;gap:8px;margin-top:14px"><button class="btn g" style="flex:1" id="uC">Not now</button><button class="btn p" style="flex:1" id="uOk">Pay $64.52 and upgrade</button></div>`); $("#uC").onclick=closeModal; $("#uOk").onclick=()=>{ S.plan="Elite"; closeModal(); toast("Upgraded to Elite","ok","Hosted setup is now in Accounts & EA"); render(); }; };
+  $("#yrBtn").onclick=()=>toast("Yearly billing","info","Opens the payment provider's portal in the real app"); $("#payPortal").onclick=()=>toast("Payment portal","info","Opens the payment provider's portal in the real app"); const uc=$("#updCard"); if(uc) uc.onclick=()=>toast("Card update","info","Opens the payment provider's portal in the real app");
+  const cb=$("#cancelBtn"); if(cb) cb.onclick=()=>{ modal(`<h3>Before you go</h3><p class="mu">What is the main reason? This helps us improve.</p><div class="choice" style="margin:10px 0">${["Too expensive","Results not good enough","Too hard to set up","Taking a break"].map(r=>`<button data-reason="${r}"><b style="font-size:12.5px">${r}</b></button>`).join("")}</div><div class="card" style="background:var(--surface2);margin-bottom:12px"><b>Pause for 1 month instead?</b><div class="mu" style="font-size:12px">No charge, your settings stay saved.</div></div><div style="display:flex;gap:8px"><button class="btn g" style="flex:1" id="pz">Pause 1 month</button><button class="btn dg" style="flex:1" id="cOk" disabled>Cancel plan</button></div>`); document.querySelectorAll("[data-reason]").forEach(b=>b.onclick=()=>{ document.querySelectorAll("[data-reason]").forEach(x=>x.classList.remove("on")); b.classList.add("on"); $("#cOk").disabled=false; }); $("#pz").onclick=()=>{ closeModal(); toast("Plan paused","ok","Billing resumes on 1 Nov 2026"); }; $("#cOk").onclick=()=>{ S.cancelled=true; closeModal(); toast("Cancellation scheduled","warn","Access runs until 1 Oct 2026"); render(); }; };
+  const un=$("#undoCancel"); if(un) un.onclick=()=>{ S.cancelled=false; toast("Your plan continues"); render(); }; }
+ if(k==="settings"){ on("#setTabs button","click",e=>{ S.settingsTab=e.currentTarget.dataset.t; render(); }); }
+ if(k==="admin"){ $("#cSearch").oninput=e=>{ $("#custT").innerHTML=custTable(e.target.value); }; }
+}
+document.addEventListener("click",e=>{ const b=e.target.closest("[data-saved]"); if(b) toast(b.dataset.saved||"Saved"); });
+buildBar(); render();
+})();
+</script>

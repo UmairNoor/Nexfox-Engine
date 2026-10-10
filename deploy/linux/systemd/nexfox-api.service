@@ -1,0 +1,29 @@
+[Unit]
+Description=NexFox Engine API (FastAPI/uvicorn)
+After=network-online.target postgresql.service redis-server.service
+Wants=network-online.target
+
+[Service]
+User=nexfox
+Group=nexfox
+WorkingDirectory=/opt/nexfox/current/apps/api
+EnvironmentFile=/opt/nexfox/shared/api.env
+# Bound to localhost only; nginx terminates TLS. 2 workers need REDIS_URL for websocket fan-out (set by install.sh).
+ExecStart=/opt/nexfox/current/apps/api/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 2 \
+  --proxy-headers --forwarded-allow-ips 127.0.0.1 --no-server-header --timeout-graceful-shutdown 20
+Restart=always
+RestartSec=3
+TimeoutStopSec=30
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/nexfox/shared/downloads
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

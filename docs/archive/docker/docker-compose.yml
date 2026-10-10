@@ -1,0 +1,51 @@
+# One command dev/staging stack:  docker compose up --build
+# Web: http://localhost:3000   API docs: http://localhost:8000/docs
+services:
+  db:
+    image: timescale/timescaledb:latest-pg16
+    environment:
+      POSTGRES_USER: aurum
+      POSTGRES_PASSWORD: aurum
+      POSTGRES_DB: aurum
+    ports: ["5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aurum"]
+      interval: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports: ["6379:6379"]
+
+  api:
+    build: ./apps/api
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+psycopg://aurum:aurum@db:5432/aurum
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      db: { condition: service_healthy }
+      redis: { condition: service_started }
+    ports: ["8000:8000"]
+    volumes: ["./apps/api/downloads:/app/downloads"]
+
+  # Runs once after the API has created tables: TimescaleDB hypertables + Row-Level Security policies.
+  migrate:
+    image: timescale/timescaledb:latest-pg16
+    depends_on:
+      api: { condition: service_started }
+    entrypoint: ["sh", "-c", "sleep 12 && psql postgresql://aurum:aurum@db:5432/aurum -f /sql/010_timescale_rls.sql"]
+    volumes: ["./infra/sql:/sql:ro"]
+    restart: "no"
+
+  web:
+    build:
+      context: ./apps/web
+      args:
+        NEXT_PUBLIC_API_URL: ${PUBLIC_API_URL:-http://localhost:8000}
+    depends_on: [api]
+    ports: ["3000:3000"]
+
+volumes:
+  pgdata:

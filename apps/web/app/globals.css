@@ -1,0 +1,65 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Design tokens — same as the UI/UX spec and the clickable prototype */
+:root {
+  --bg:#090D14; --rail:#0C111A; --surface:#111722; --surface2:#172030; --line:#222C3B; --line2:#1A2230;
+  --text:#E7EBF1; --muted:#8B96A9; --faint:#5E687A; --gold:#E7B54A; --gold-ink:#1B1304; --gold-soft:rgba(231,181,74,.13);
+  --good:#22C55E; --good-soft:rgba(34,197,94,.13); --bad:#EF4444; --bad-soft:rgba(239,68,68,.12);
+  --warn:#F59E0B; --warn-soft:rgba(245,158,11,.13); --info:#60A5FA; --info-soft:rgba(96,165,250,.13);
+  color-scheme: dark;
+}
+html, body { height: 100%; }
+body { background: var(--bg); color: var(--text); font-family: Manrope, system-ui, -apple-system, "Segoe UI", sans-serif; font-size: 13px; line-height: 1.45; -webkit-font-smoothing: antialiased; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.mono { font-family: "JetBrains Mono", ui-monospace, Menlo, monospace; font-variant-numeric: tabular-nums; }
+.num { font-variant-numeric: tabular-nums; }
+.up { color: var(--good); } .dn { color: var(--bad); } .mu { color: var(--muted); } .gd { color: var(--gold); }
+
+@layer components {
+  .btn { @apply inline-flex items-center justify-center gap-1.5 rounded-lg border border-transparent px-3.5 py-2 text-[12.5px] font-bold whitespace-nowrap disabled:opacity-45 disabled:cursor-not-allowed; }
+  .btn-p { background: var(--gold); color: var(--gold-ink); }
+  .btn-g { border-color: var(--line); color: var(--text); }
+  .btn-g:hover { background: var(--surface2); }
+  .btn-dg { border-color: rgba(239,68,68,.4); color: #FCA5A5; background: var(--bad-soft); }
+  .btn-d { background: var(--bad); color: #fff; }
+  .btn-sm { @apply px-2.5 py-1.5 text-[11.5px]; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 14px; min-width: 0; }
+  .card-h { @apply mb-2.5 flex flex-wrap items-center gap-2 text-[12.5px] font-bold; }
+  .card-h .r { @apply ml-auto text-[11px] font-medium; color: var(--muted); }
+  .pill { @apply inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[11px] font-bold; }
+  .pill.dot::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+  .pill-ok { color: var(--good); background: var(--good-soft); } .pill-bad { color: var(--bad); background: var(--bad-soft); }
+  .pill-warn { color: var(--warn); background: var(--warn-soft); } .pill-info { color: var(--info); background: var(--info-soft); }
+  .pill-gold { color: var(--gold); background: var(--gold-soft); }
+  .field { @apply mb-3 flex flex-col gap-1.5; }
+  .field > label { @apply flex justify-between text-[11.5px] font-semibold; color: var(--muted); }
+  .inp { @apply w-full rounded-lg px-3 py-2.5 text-[13px]; background: #0B1119; border: 1px solid var(--line); color: var(--text); }
+  .inp:focus { outline: none; border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-soft); }
+  .tabs { @apply inline-flex gap-0.5 rounded-lg p-0.5; background: #0B1119; border: 1px solid var(--line); }
+  .tabs button { @apply rounded-md px-2.5 py-1 text-[11.5px] font-semibold; color: var(--muted); }
+  .tabs button.on { background: #243044; color: var(--text); }
+  .tog { width: 32px; height: 18px; border-radius: 999px; background: #2A3446; position: relative; flex: none; }
+  .tog::after { content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 50%; background: #fff; transition: left .15s; }
+  .tog.on { background: var(--gold); } .tog.on::after { left: 17px; }
+  .kv { @apply flex justify-between gap-2.5 py-1.5 text-xs; border-bottom: 1px dashed var(--line2); }
+  .kv:last-child { border-bottom: 0; } .kv > span:first-child { color: var(--muted); }
+  .tbl { @apply w-full border-collapse text-xs; font-variant-numeric: tabular-nums; }
+  .tbl th { @apply whitespace-nowrap px-2 py-2 text-left text-[10.5px] font-semibold uppercase tracking-wide; color: var(--muted); border-bottom: 1px solid var(--line); }
+  .tbl td { @apply whitespace-nowrap px-2 py-2; border-bottom: 1px solid var(--line2); }
+  .tbl .n { text-align: right; }
+  .side { @apply rounded px-1.5 py-0.5 text-[10.5px] font-extrabold; }
+  .side-BUY { color: var(--good); background: var(--good-soft); } .side-SELL { color: var(--bad); background: var(--bad-soft); }
+  .kpi-l { @apply text-[11px] font-semibold; color: var(--muted); }
+  .kpi-v { @apply mt-1 text-[22px] font-bold tracking-tight; font-variant-numeric: tabular-nums; }
+  .kpi-d { @apply mt-0.5 text-[11px]; color: var(--muted); }
+  .banner { @apply flex flex-wrap items-center gap-2.5 rounded-lg px-3 py-2.5 text-[12.5px]; }
+  .banner-warn { background: var(--warn-soft); border: 1px solid rgba(245,158,11,.35); color: #FCD34D; }
+  .banner-bad { background: var(--bad-soft); border: 1px solid rgba(239,68,68,.35); color: #FCA5A5; }
+  .banner-info { background: var(--info-soft); border: 1px solid rgba(96,165,250,.35); color: #BFDBFE; }
+  .choice { @apply rounded-lg p-3 text-left; background: var(--surface); border: 1px solid var(--line); }
+  .choice.on { border-color: var(--gold); background: var(--gold-soft); }
+  .err { color: #FCA5A5; @apply text-xs; }
+  .mark { @apply grid h-[26px] w-[26px] place-items-center rounded-[7px] text-sm font-extrabold; background: linear-gradient(135deg,#F6D98A,#C28A22); color: var(--gold-ink); }
+}

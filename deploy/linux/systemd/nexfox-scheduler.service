@@ -1,0 +1,21 @@
+[Unit]
+Description=NexFox Engine scheduler (watchdogs, trial expiry, order reconciliation timeouts, retention)
+After=network-online.target postgresql.service
+Wants=network-online.target
+
+[Service]
+User=nexfox
+Group=nexfox
+WorkingDirectory=/opt/nexfox/current/apps/api
+EnvironmentFile=/opt/nexfox/shared/api.env
+ExecStart=/opt/nexfox/current/apps/api/.venv/bin/python -m app.scheduler
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target

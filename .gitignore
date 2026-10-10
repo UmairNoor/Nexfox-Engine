@@ -1,0 +1,25 @@
+# secrets and local config
+.env
+*.env
+.env.*
+!*.env.example
+!.env.example
+apps/worker/.dev-token
+apps/worker/dev-fake-mt5.json
+
+# dependencies / builds
+node_modules/
+.next/
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# data
+*.db
+apps/worker/data/
+apps/worker/logs/
+bots/*/logs/
+bots/*/logs_new/
+/logs_new/
+apps/api/downloads/*.ex5

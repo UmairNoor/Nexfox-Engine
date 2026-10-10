@@ -1,0 +1,19 @@
+[Unit]
+Description=NexFox Engine web dashboard (Next.js standalone)
+After=network-online.target nexfox-api.service
+
+[Service]
+User=nexfox
+Group=nexfox
+WorkingDirectory=/opt/nexfox/current/apps/web/.next/standalone
+Environment=NODE_ENV=production PORT=3000 HOSTNAME=127.0.0.1 NEXT_TELEMETRY_DISABLED=1
+ExecStart=/usr/bin/node server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
